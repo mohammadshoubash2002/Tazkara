@@ -4,6 +4,7 @@ import com.mohammad.identity_service.dto.*;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.entity.Role;
 import com.mohammad.identity_service.exception.DuplicateEmailException;
+import com.mohammad.identity_service.exception.ForbiddenException;
 import com.mohammad.identity_service.repository.UserRepository;
 import com.mohammad.identity_service.util.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,8 +102,10 @@ public class UserService {
 
         appUser.setName(profileEditRequest.name());
 
-        if(appUser.getIsOrganizer()){
+        if(appUser.getIsOrganizer() && profileEditRequest.organization_name() != null){
             appUser.setOrganizationName(profileEditRequest.organization_name());
+        } else {
+            throw new ForbiddenException("Organization name cannot be updated for non-organizer users");
         }
 
         userRepository.save(appUser);
