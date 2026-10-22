@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  identity-service:
+    build: ./identity-service
+    container_name: identity-service
+    ports:
+      - "8081:8081"
+    environment:
+      # - SPRING_APPLICATION_JSON={"eureka":{"client":{"serviceUrl":{"defaultZone":"http://service-registry:8761/eureka/"}}}}
+      # - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://service-registry:8761/eureka/
+      # - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+    depends_on:
+      # - service-registry
+    volumes:
+      - identity-service-data:/app/data
+    networks:
+      - default
+
+volumes: 
+  identity-service-data:
+
+networks:
+  default:
+    driver: bridge
