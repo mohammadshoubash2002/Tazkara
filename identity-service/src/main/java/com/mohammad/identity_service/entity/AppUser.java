@@ -2,6 +2,8 @@ package com.mohammad.identity_service.entity;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "users")
 public class AppUser {
@@ -72,7 +74,7 @@ public class AppUser {
         return this.password = password;
     }
 
-    public String setOrganization_name(String organization_name) {
+    public String setOrganizationName(String organizationName) {
         return this.organizationName = organizationName;
     }
 

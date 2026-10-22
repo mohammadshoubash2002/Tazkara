@@ -1,9 +1,6 @@
 package com.mohammad.identity_service.service;
 
-import com.mohammad.identity_service.dto.LoginRequest;
-import com.mohammad.identity_service.dto.LoginResponse;
-import com.mohammad.identity_service.dto.ProfileResponse;
-import com.mohammad.identity_service.dto.RegisterRequest;
+import com.mohammad.identity_service.dto.*;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.entity.Role;
 import com.mohammad.identity_service.exception.DuplicateEmailException;
@@ -94,7 +91,25 @@ public class UserService {
 
         return ResponseEntity.ok(
                 new ProfileResponse(
-                        appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
+                        "Profile data retrieved successfully", appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
+                )
+        );
+    }
+
+    public ResponseEntity<ProfileResponse> updateMyProfile(Principal principal, ProfileEditRequest profileEditRequest) {
+        AppUser appUser = userRepository.findByEmail(principal.getName()).orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        appUser.setName(profileEditRequest.name());
+
+        if(appUser.getIsOrganizer()){
+            appUser.setOrganizationName(profileEditRequest.organization_name());
+        }
+
+        userRepository.save(appUser);
+
+        return ResponseEntity.ok(
+                new ProfileResponse(
+                        "Profile updated successfully", appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
                 )
         );
     }
