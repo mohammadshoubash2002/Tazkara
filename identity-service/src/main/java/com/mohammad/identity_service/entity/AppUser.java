@@ -1,8 +1,6 @@
 package com.mohammad.identity_service.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "users")
@@ -13,10 +11,8 @@ public class AppUser {
 
     private String name;
 
-    @Email
     private String email;
 
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")
     private String password;
 
     private String role;

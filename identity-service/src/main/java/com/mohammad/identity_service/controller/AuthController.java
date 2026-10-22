@@ -20,7 +20,7 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<Optional<AppUser>> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<Optional<AppUser>> register(@RequestBody RegisterRequest registerRequest) {
         return userService.register(registerRequest);
     }
 }
