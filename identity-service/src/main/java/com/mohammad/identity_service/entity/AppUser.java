@@ -1,0 +1,126 @@
+package com.mohammad.identity_service.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import org.springframework.beans.factory.annotation.Configurable;
+
+@Entity
+@Table(name = "users")
+public class AppUser {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @Email
+    private String email;
+
+    private String password;
+
+    private String role;
+
+    @Column(nullable = true)
+    private String organization_name;
+
+    public AppUser(){
+
+    }
+
+    public AppUser(String name, String email, String password, String role, String organization_name){
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+        this.organization_name = organization_name;
+    }
+
+
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public String getOrganization_name() {
+        return organization_name;
+    }
+
+    public String setName(String name) {
+        return this.name = name;
+    }
+
+    public String setEmail(String email) {
+        return this.email = email;
+    }
+
+    public String setPassword(String password) {
+        return this.password = password;
+    }
+
+    public String setOrganization_name(String organization_name) {
+        return this.organization_name = organization_name;
+    }
+
+    @Override
+    public String toString() {
+        return "AppUser{" +
+                "name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", role='" + role + '\'' +
+                ", organization_name='" + organization_name + '\'' +
+                '}';
+    }
+
+    public static class Builder {
+        private String name;
+        private String email;
+        private String password;
+        private String role;
+        private String organization_name;
+
+        public Builder(String name, String email, String password, String role, String organization_name){
+            this.name = name;
+            this.email = email;
+            this.password = password;
+            this.role = role;
+            this.organization_name = organization_name;
+        }
+
+        public Builder name(String name){
+            this.name = name;
+            return this;
+        }
+
+        public Builder email(String email){
+            this.email = email;
+            return this;
+        }
+
+        public Builder password(String password){
+            this.password = password;
+            return this;
+        }
+
+        public Builder role(String role){
+            this.role = role;
+            return this;
+        }
+
+        public Builder organization_name(String organization_name){
+            this.organization_name = organization_name;
+            return this;
+        }
+
+        public AppUser build(){
+            return new AppUser(name, email, password, role, organization_name);
+        }
+    }
+}
