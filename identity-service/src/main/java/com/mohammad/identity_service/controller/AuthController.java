@@ -1,10 +1,10 @@
 package com.mohammad.identity_service.controller;
 
+import com.mohammad.identity_service.dto.LoginRequest;
+import com.mohammad.identity_service.dto.LoginResponse;
 import com.mohammad.identity_service.dto.RegisterRequest;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.service.UserService;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
     @Autowired
     private UserService userService;
@@ -23,5 +23,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Optional<AppUser>> register(@RequestBody RegisterRequest registerRequest) {
         return userService.register(registerRequest);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+        return userService.login(loginRequest);
     }
 }

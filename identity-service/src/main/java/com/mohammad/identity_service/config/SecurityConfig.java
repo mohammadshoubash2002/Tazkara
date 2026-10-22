@@ -32,7 +32,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/auth/**", "/h2-console/**").permitAll()
+                        auth.requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
                                 .anyRequest().authenticated())
             .exceptionHandling(eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

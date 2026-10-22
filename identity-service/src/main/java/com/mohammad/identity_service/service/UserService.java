@@ -1,15 +1,20 @@
 package com.mohammad.identity_service.service;
 
+import com.mohammad.identity_service.dto.LoginRequest;
+import com.mohammad.identity_service.dto.LoginResponse;
 import com.mohammad.identity_service.dto.RegisterRequest;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.entity.Role;
 import com.mohammad.identity_service.exception.DuplicateEmailException;
 import com.mohammad.identity_service.repository.UserRepository;
 import com.mohammad.identity_service.util.Validator;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +24,12 @@ import java.util.Optional;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Autowired
     private PasswordEncoder encoder;
@@ -54,5 +65,24 @@ public class UserService {
         userRepository.save(user);
 
         return new ResponseEntity<>(Optional.of(user), HttpStatus.CREATED);
+    }
+
+    public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {
+        if(loginRequest.email() == null || loginRequest.password() == null) {
+            throw new IllegalArgumentException("Email and password are required");
+        }
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
+        );
+
+        UserDetails user = (UserDetails) authentication.getPrincipal();
+
+        if(user == null) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        String token = jwtService.generateToken(user);
+        return ResponseEntity.ok(new LoginResponse(token, jwtService.getExpirationTimeInMinutes()));
     }
 }

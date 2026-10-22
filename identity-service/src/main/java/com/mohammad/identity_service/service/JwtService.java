@@ -1,22 +1,25 @@
 package com.mohammad.identity_service.service;
 
-import com.mohammad.identity_service.entity.AppUser;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 
+@Service
 public class JwtService {
     private final SecretKey key;
     private final long expirationMs;
 
-    public JwtService(@Value("${app.jwt.secret}") SecretKey key,
+    public JwtService(@Value("${app.jwt.secret}") String key,
                       @Value("${app.jwt.expiration-ms}") long expirationMs) {
-        this.key = key;
+        this.key = Keys.hmacShaKeyFor(key.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 
@@ -41,5 +44,9 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+
+    public int getExpirationTimeInMinutes() {
+        return (int) (expirationMs / (1000 * 60));
     }
 }
