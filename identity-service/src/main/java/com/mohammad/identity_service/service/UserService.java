@@ -7,9 +7,11 @@ import com.mohammad.identity_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Service
 public class UserService {
     @Autowired
     private UserRepository userRepository;
@@ -24,7 +26,7 @@ public class UserService {
                 .password(encoder.encode(registerRequest.password()))
                 .role(Role.ATTENDEE.name())
                 .isOrganizer(false)
-                .organization_name(null)
+                .organizationName(null)
                 .build();
 
         userRepository.save(user);

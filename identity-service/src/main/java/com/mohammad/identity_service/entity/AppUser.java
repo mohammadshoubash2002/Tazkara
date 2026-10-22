@@ -2,6 +2,7 @@ package com.mohammad.identity_service.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "users")
@@ -15,12 +16,13 @@ public class AppUser {
     @Email
     private String email;
 
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")
     private String password;
 
     private String role;
 
     @Column(nullable = true, unique = true)
-    private String organization_name;
+    private String organizationName;
 
     private boolean isOrganizer;
 
@@ -28,13 +30,13 @@ public class AppUser {
 
     }
 
-    public AppUser(String name, String email, String password, String role, boolean isOrganizer, String organization_name){
+    public AppUser(String name, String email, String password, String role, boolean isOrganizer, String organizationName){
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role;
         this.isOrganizer = isOrganizer;
-        this.organization_name = organization_name;
+        this.organizationName = organizationName;
     }
 
 
@@ -50,8 +52,8 @@ public class AppUser {
         return role;
     }
 
-    public String getOrganization_name() {
-        return organization_name;
+    public String getOrganizationName() {
+        return organizationName;
     }
 
     public boolean getIsOrganizer() {
@@ -71,7 +73,7 @@ public class AppUser {
     }
 
     public String setOrganization_name(String organization_name) {
-        return this.organization_name = organization_name;
+        return this.organizationName = organizationName;
     }
 
     public boolean setIsOrganizer(boolean isOrganizer) {
@@ -85,7 +87,7 @@ public class AppUser {
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
                 ", role='" + role + '\'' +
-                ", organization_name='" + organization_name + '\'' +
+                ", organization_name='" + organizationName + '\'' +
                 '}';
     }
 
@@ -94,15 +96,15 @@ public class AppUser {
         private String email;
         private String password;
         private String role;
-        private String organization_name;
+        private String organizationName;
         private boolean isOrganizer;
 
-//        public Builder(String name, String email, String password, String role, String organization_name){
+//        public Builder(String name, String email, String password, String role, String organizationName){
 //            this.name = name;
 //            this.email = email;
 //            this.password = password;
 //            this.role = role;
-//            this.organization_name = organization_name;
+//            this.organizationName = organizationName;
 //        }
 
         public Builder name(String name){
@@ -125,8 +127,8 @@ public class AppUser {
             return this;
         }
 
-        public Builder organization_name(String organization_name){
-            this.organization_name = organization_name;
+        public Builder organizationName(String organizationName){
+            this.organizationName = organizationName;
             return this;
         }
 
@@ -136,7 +138,7 @@ public class AppUser {
         }
 
         public AppUser build(){
-            return new AppUser(name, email, password, role, isOrganizer, organization_name);
+            return new AppUser(name, email, password, role, isOrganizer, organizationName);
         }
     }
 }
