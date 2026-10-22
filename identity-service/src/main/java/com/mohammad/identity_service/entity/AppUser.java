@@ -2,7 +2,6 @@ package com.mohammad.identity_service.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import org.springframework.beans.factory.annotation.Configurable;
 
 @Entity
 @Table(name = "users")
@@ -20,7 +19,7 @@ public class AppUser {
 
     private String role;
 
-    @Column(nullable = true)
+    @Column(nullable = true, unique = true)
     private String organization_name;
 
     public AppUser(){
