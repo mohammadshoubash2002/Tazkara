@@ -9,7 +9,7 @@ public final class Validator {
     );
 
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+            "^(?=.*[a-zA-Z])(?=.*\\d)[A-Za-z\\d\\W_]{8,}$"
     );
 
     private Validator() {

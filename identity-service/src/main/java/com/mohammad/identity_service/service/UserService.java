@@ -3,6 +3,7 @@ package com.mohammad.identity_service.service;
 import com.mohammad.identity_service.dto.RegisterRequest;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.entity.Role;
+import com.mohammad.identity_service.exception.DuplicateEmailException;
 import com.mohammad.identity_service.repository.UserRepository;
 import com.mohammad.identity_service.util.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class UserService {
 
     public ResponseEntity<Optional<AppUser>> register(RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.email())) {
-            throw new IllegalArgumentException("Email already in use: " + registerRequest.email());
+            throw new DuplicateEmailException("Email already in use: " + registerRequest.email());
         }
 
         // checking email validation
