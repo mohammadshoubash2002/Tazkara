@@ -44,6 +44,10 @@ public class AppUser {
         return email;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
     public String getRole() {
         return role;
     }
