@@ -22,15 +22,18 @@ public class AppUser {
     @Column(nullable = true, unique = true)
     private String organization_name;
 
+    private boolean isOrganizer;
+
     public AppUser(){
 
     }
 
-    public AppUser(String name, String email, String password, String role, String organization_name){
+    public AppUser(String name, String email, String password, String role, boolean isOrganizer, String organization_name){
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role;
+        this.isOrganizer = isOrganizer;
         this.organization_name = organization_name;
     }
 
@@ -51,6 +54,10 @@ public class AppUser {
         return organization_name;
     }
 
+    public boolean getIsOrganizer() {
+        return isOrganizer;
+    }
+
     public String setName(String name) {
         return this.name = name;
     }
@@ -65,6 +72,10 @@ public class AppUser {
 
     public String setOrganization_name(String organization_name) {
         return this.organization_name = organization_name;
+    }
+
+    public boolean setIsOrganizer(boolean isOrganizer) {
+        return this.isOrganizer = isOrganizer;
     }
 
     @Override
@@ -84,14 +95,15 @@ public class AppUser {
         private String password;
         private String role;
         private String organization_name;
+        private boolean isOrganizer;
 
-        public Builder(String name, String email, String password, String role, String organization_name){
-            this.name = name;
-            this.email = email;
-            this.password = password;
-            this.role = role;
-            this.organization_name = organization_name;
-        }
+//        public Builder(String name, String email, String password, String role, String organization_name){
+//            this.name = name;
+//            this.email = email;
+//            this.password = password;
+//            this.role = role;
+//            this.organization_name = organization_name;
+//        }
 
         public Builder name(String name){
             this.name = name;
@@ -118,8 +130,13 @@ public class AppUser {
             return this;
         }
 
+        public Builder isOrganizer(boolean isOrganizer){
+            this.isOrganizer = isOrganizer;
+            return this;
+        }
+
         public AppUser build(){
-            return new AppUser(name, email, password, role, organization_name);
+            return new AppUser(name, email, password, role, isOrganizer, organization_name);
         }
     }
 }
