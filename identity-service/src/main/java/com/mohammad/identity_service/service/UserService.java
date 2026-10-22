@@ -2,6 +2,7 @@ package com.mohammad.identity_service.service;
 
 import com.mohammad.identity_service.dto.LoginRequest;
 import com.mohammad.identity_service.dto.LoginResponse;
+import com.mohammad.identity_service.dto.ProfileResponse;
 import com.mohammad.identity_service.dto.RegisterRequest;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.entity.Role;
@@ -11,6 +12,7 @@ import com.mohammad.identity_service.util.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,6 +20,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.util.Optional;
 
 @Service
@@ -84,5 +87,15 @@ public class UserService {
 
         String token = jwtService.generateToken(user);
         return ResponseEntity.ok(new LoginResponse(token, jwtService.getExpirationTimeInMinutes()));
+    }
+
+    public ResponseEntity<ProfileResponse> getMyProfile(Principal principal) {
+        AppUser appUser = userRepository.findByEmail(principal.getName()).orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return ResponseEntity.ok(
+                new ProfileResponse(
+                        appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
+                )
+        );
     }
 }
