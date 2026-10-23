@@ -50,6 +50,11 @@ public class UserService {
             throw new IllegalArgumentException("Invalid password format, must contain at least one lowercase letter, one uppercase letter, one digit, and one special character");
         }
 
+        // checking username validation
+        if (!Validator.isValidUsername(registerRequest.username())) {
+            throw new IllegalArgumentException("Invalid username format, must contain only letters, numbers, underscores, and hyphens, and be between 3 and 20 characters long");
+        }
+
         if(!registerRequest.is_organizer() && registerRequest.organization_name() != null) {
             throw new IllegalArgumentException("You cannot provide an organization name for non-organizer users");
         }
@@ -107,6 +112,11 @@ public class UserService {
             appUser.setOrganizationName(profileEditRequest.organization_name());
         } else {
             throw new ForbiddenException("Organization name cannot be updated for non-organizer users");
+        }
+
+        // checking username validation
+        if (!Validator.isValidUsername(profileEditRequest.username())) {
+            throw new IllegalArgumentException("Invalid username format, must contain only letters, numbers, underscores, and hyphens, and be between 3 and 20 characters long");
         }
 
         userRepository.save(appUser);

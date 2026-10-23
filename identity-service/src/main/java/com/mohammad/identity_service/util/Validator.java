@@ -12,6 +12,8 @@ public final class Validator {
             "^(?=.*[a-zA-Z])(?=.*\\d)[A-Za-z\\d\\W_]{8,}$"
     );
 
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,20}$");
+
     private Validator() {
         // Prevent instantiation of utility class
     }
@@ -28,5 +30,13 @@ public final class Validator {
             return false;
         }
         return PASSWORD_PATTERN.matcher(password.trim()).matches();
+    }
+
+    public static boolean isValidUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return false;
+        };
+
+        return USERNAME_PATTERN.matcher(username.trim()).matches();
     }
 }

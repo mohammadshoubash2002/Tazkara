@@ -11,9 +11,9 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class DatabaseUserDetailsService implements UserDetailsService {
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Step 1: find the user in our table
-        Object appUser = new RestTemplate().getForObject("http://localhost:8081/api/users/", Object.class);
+        Object appUser = new RestTemplate().getForObject("http://localhost:8081/api/users/" + username, Object.class);
 
         // Step 2: describe him in Spring Security's language
 //        return User.withUsername(appUser.getEmail())
