@@ -32,4 +32,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleNotDraftEventException(NotDraftEventException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
+
+    @ExceptionHandler(InvalidEventStatusException.class)
+    public ResponseEntity<String> handleInvalidEventStatusException(InvalidEventStatusException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
 }
