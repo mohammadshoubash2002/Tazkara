@@ -2,12 +2,14 @@ package com.mohammad.identity_service.controller;
 
 import com.mohammad.identity_service.dto.ProfileEditRequest;
 import com.mohammad.identity_service.dto.ProfileResponse;
+import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -23,5 +25,10 @@ public class UserController {
     @PutMapping("/my-profile")
     public ResponseEntity<ProfileResponse> updateMyProfile(Principal principal, @RequestBody ProfileEditRequest profileEditRequest) {
         return userService.updateMyProfile(principal, profileEditRequest);
+    }
+
+    @GetMapping("/my-profile/username")
+    public Optional<AppUser> findByUsername(Principal principal) {
+        return userService.findByUsername(principal.getName());
     }
 }

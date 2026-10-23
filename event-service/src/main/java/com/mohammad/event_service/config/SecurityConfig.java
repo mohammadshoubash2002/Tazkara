@@ -1,6 +1,5 @@
 package com.mohammad.event_service.config;
 
-
 import com.mohammad.event_service.filter.JwtFilter;
 import com.mohammad.event_service.service.DatabaseUserDetailsService;
 import com.mohammad.event_service.service.JwtService;
@@ -32,11 +31,10 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
             .authorizeHttpRequests(auth ->
-                    auth.requestMatchers("/h2-console/**").permitAll()
+                    auth.requestMatchers("/h2-console/**", "/api/test/**").permitAll()
                             .anyRequest().authenticated())
             .exceptionHandling(eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-          
         return http.build();
     }
 

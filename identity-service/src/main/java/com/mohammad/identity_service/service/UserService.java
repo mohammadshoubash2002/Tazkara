@@ -79,8 +79,10 @@ public class UserService {
             throw new IllegalArgumentException("Email and password are required");
         }
 
+        String userName = userRepository.findByEmail(loginRequest.email()).get().getUsername();
+
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
+                new UsernamePasswordAuthenticationToken(userName, loginRequest.password())
         );
 
         UserDetails user = (UserDetails) authentication.getPrincipal();
@@ -94,7 +96,7 @@ public class UserService {
     }
 
     public ResponseEntity<ProfileResponse> getMyProfile(Principal principal) {
-        AppUser appUser = userRepository.findByEmail(principal.getName()).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        AppUser appUser = userRepository.findByUsername(principal.getName()).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         return ResponseEntity.ok(
                 new ProfileResponse(
@@ -104,7 +106,7 @@ public class UserService {
     }
 
     public ResponseEntity<ProfileResponse> updateMyProfile(Principal principal, ProfileEditRequest profileEditRequest) {
-        AppUser appUser = userRepository.findByEmail(principal.getName()).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        AppUser appUser = userRepository.findByUsername(principal.getName()).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         appUser.setName(profileEditRequest.name());
 
@@ -114,9 +116,11 @@ public class UserService {
             throw new ForbiddenException("Organization name cannot be updated for non-organizer users");
         }
 
+        appUser.setUsername(profileEditRequest.username());
+
         // checking username validation
         if (!Validator.isValidUsername(profileEditRequest.username())) {
-            throw new IllegalArgumentException("Invalid username format, must contain only letters, numbers, underscores, and hyphens, and be between 3 and 20 characters long");
+            throw new IllegalArgumentException("Invalid username format, must contain only letters, numbers, underscores, and be between 3 and 20 characters long");
         }
 
         userRepository.save(appUser);
@@ -126,5 +130,9 @@ public class UserService {
                         "Profile updated successfully", appUser.getUsername(), appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
                 )
         );
+    }
+
+    public Optional<AppUser> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }

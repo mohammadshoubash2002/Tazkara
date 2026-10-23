@@ -96,6 +96,12 @@
 			<version>${jjwt.version}</version>
 			<scope>runtime</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient</artifactId>
+			<version>4.0.5</version>
+		</dependency>
 	</dependencies>
 
 	<build>

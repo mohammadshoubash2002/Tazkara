@@ -17,7 +17,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Step 1: find the user in our table
-        AppUser appUser = repository.findByEmail(username)
+        AppUser appUser = repository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         // Step 2: describe him in Spring Security's language
