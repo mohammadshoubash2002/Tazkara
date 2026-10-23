@@ -1,6 +1,9 @@
 package com.mohammad.event_service.config;
 
 
+import com.mohammad.event_service.filter.JwtFilter;
+import com.mohammad.event_service.service.DatabaseUserDetailsService;
+import com.mohammad.event_service.service.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -12,12 +15,18 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   DatabaseUserDetailsService databaseUserDetailsService,
+                                                   JwtService jwtService) throws Exception {
+
+        JwtFilter jwtFilter = new JwtFilter(jwtService, databaseUserDetailsService);
+
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -25,8 +34,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth ->
                     auth.requestMatchers("/h2-console/**").permitAll()
                             .anyRequest().authenticated())
-            .exceptionHandling(eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
-
+            .exceptionHandling(eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+          
         return http.build();
     }
 

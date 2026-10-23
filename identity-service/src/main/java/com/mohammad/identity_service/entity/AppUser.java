@@ -11,6 +11,8 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String username;
+
     private String name;
 
     private String email;
@@ -28,7 +30,8 @@ public class AppUser {
 
     }
 
-    public AppUser(String name, String email, String password, String role, boolean isOrganizer, String organizationName){
+    public AppUser(String username ,String name, String email, String password, String role, boolean isOrganizer, String organizationName){
+        this.username = username;
         this.name = name;
         this.email = email;
         this.password = password;
@@ -37,6 +40,10 @@ public class AppUser {
         this.organizationName = organizationName;
     }
 
+
+    public String getUsername() {
+        return username;
+    }
 
     public String getName() {
         return name;
@@ -62,6 +69,10 @@ public class AppUser {
         return isOrganizer;
     }
 
+    public String setUsername(String username) {
+        return this.username = username;
+    }
+
     public String setName(String name) {
         return this.name = name;
     }
@@ -85,6 +96,7 @@ public class AppUser {
     @Override
     public String toString() {
         return "AppUser{" +
+                "username='" + username + '\'' +
                 "name='" + name + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
@@ -94,6 +106,7 @@ public class AppUser {
     }
 
     public static class Builder {
+        private String username;
         private String name;
         private String email;
         private String password;
@@ -108,6 +121,11 @@ public class AppUser {
 //            this.role = role;
 //            this.organizationName = organizationName;
 //        }
+
+        public Builder username(String username){
+            this.username = username;
+            return this;
+        }
 
         public Builder name(String name){
             this.name = name;
@@ -140,7 +158,7 @@ public class AppUser {
         }
 
         public AppUser build(){
-            return new AppUser(name, email, password, role, isOrganizer, organizationName);
+            return new AppUser(username, name, email, password, role, isOrganizer, organizationName);
         }
     }
 }
