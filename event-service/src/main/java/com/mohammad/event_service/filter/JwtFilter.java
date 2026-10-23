@@ -43,9 +43,9 @@ public class JwtFilter extends OncePerRequestFilter {
             // Step #3 - validate token
             String username = jwtService.extractUsername(token);
 
-            databaseUserDetailsService.getUserFromIdentityService(token);
+            UserDetails userDetails = databaseUserDetailsService.loadUserByToken(token);
 
-            UserDetails userDetails = databaseUserDetailsService.loadUserByUsername(username);
+//            databaseUserDetailsService.loadUserByUsername(username);
 
             // Step #4 - load the user from the database
             if (SecurityContextHolder.getContext().getAuthentication() == null) {

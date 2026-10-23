@@ -134,6 +134,6 @@ public class UserService {
 
     public ResponseEntity<UserDetailsServiceStructure> findByUsername(String username) {
         AppUser user = userRepository.findByUsername(username).get();
-        return ResponseEntity.ok(new UserDetailsServiceStructure(user.getUsername(), user.getPassword(), user.getRole()));
+        return ResponseEntity.ok(new UserDetailsServiceStructure(user.getId(), user.getUsername(), user.getPassword(), user.getRole()));
     }
 }

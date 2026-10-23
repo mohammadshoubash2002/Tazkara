@@ -12,29 +12,39 @@ import java.util.LinkedHashMap;
 
 @Service
 public class DatabaseUserDetailsService implements UserDetailsService {
-    private UserDetailsServiceStructure user;
+
+    private final RestClient restClient;
+
+    public DatabaseUserDetailsService(RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.baseUrl("http://localhost:8081").build();
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return User.withUsername(user.username())
-                .password(user.password())
-                .roles(user.role())
-                .build();
+        throw new UnsupportedOperationException("Load user by username directly is not supported; use loadUserByToken instead.");
     }
 
-    public void getUserFromIdentityService(String token){
-        RestClient restClient = RestClient.create();
+    public UserDetails loadUserByToken(String token) {
         LinkedHashMap<String, Object> response = restClient
                 .get()
-                .uri("http://localhost:8081/api/users/my-profile/username").header(
-                        "Authorization", "Bearer " + token)
+                .uri("/api/users/my-profile/username")
+                .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .body(LinkedHashMap.class);
 
-        user = new UserDetailsServiceStructure(
+        if (response == null || !response.containsKey("username")) {
+            throw new UsernameNotFoundException("User not found from Identity Service");
+        }
+
+        UserDetailsServiceStructure user = new UserDetailsServiceStructure(
                 (String) response.get("username"),
                 (String) response.get("password"),
                 (String) response.get("role")
         );
+
+        return User.withUsername(user.username())
+                .password(user.password() != null ? user.password() : "")
+                .roles(user.role())
+                .build();
     }
 }

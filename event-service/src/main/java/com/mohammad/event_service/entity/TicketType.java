@@ -1,5 +1,6 @@
 package com.mohammad.event_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -22,16 +23,18 @@ public class TicketType {
 
     @ManyToOne
     @JoinColumn(name = "event_id")
+    @JsonIgnore
     private Event event;
 
     public TicketType(){
 
     }
 
-    public TicketType(String name, Double price, Integer quantity){
+    public TicketType(String name, Double price, Integer quantity, Event event){
         this.name = name;
         this.price = price;
         this.quantity = quantity;
+        this.event = event;
     }
 
 
@@ -59,12 +62,21 @@ public class TicketType {
         this.quantity = quantity;
     }
 
+    public Event getEvent() {
+        return event;
+    }
+
+    public void setEvent(Event event) {
+        this.event = event;
+    }
+
     @Override
     public String toString() {
         return "Event{" +
                 "name='" + name + '\'' +
                 ", price='" + price + '\'' +
                 ", quantity='" + quantity + '\'' +
+                ", event='" + event + '\'' +
                 '}';
     }
 
@@ -72,6 +84,7 @@ public class TicketType {
         private String name;
         private Double price;
         private Integer quantity;
+        private Event event;
 
         public Builder name(String name){
             this.name = name;
@@ -88,8 +101,13 @@ public class TicketType {
             return this;
         }
 
+        public Builder event(Event event){
+            this.event = event;
+            return this;
+        }
+
         public TicketType build(){
-            return new TicketType(name, price, quantity);
+            return new TicketType(name, price, quantity, event);
         }
     }
 }

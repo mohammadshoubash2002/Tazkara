@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.Cascade;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,19 +24,21 @@ public class Event {
     private Integer organizerId;
 
     @Size(min = 1, max = 5, message = "An event must have between 1 and 5 ticket types")
-    @OneToMany(mappedBy = "event")
-    private List<TicketType> ticketType;
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    private List<TicketType> ticketTypes;
 
     public Event() {
     }
 
-    public Event(String title, String description, String venue, String city, LocalDateTime dateTime, String status) {
+    public Event(String title, String description, String venue, String city, LocalDateTime dateTime, String status, Integer organizerId, List<TicketType> ticketTypes) {
         this.title = title;
         this.description = description;
         this.venue = venue;
         this.city = city;
         this.dateTime = dateTime;
         this.status = status;
+        this.organizerId = organizerId;
+        this.ticketTypes = ticketTypes;
     }
 
     public String getTitle() {
@@ -86,6 +89,22 @@ public class Event {
         this.status = status;
     }
 
+    public List<TicketType> getTicketTypes() {
+        return ticketTypes;
+    }
+
+    public void setTicketTypes(List<TicketType> ticketTypes) {
+        this.ticketTypes = ticketTypes;
+    }
+
+    public Integer getOrganizerId() {
+        return organizerId;
+    }
+
+    public void setOrganizerId(Integer organizerId) {
+        this.organizerId = organizerId;
+    }
+
     @Override
     public String toString() {
         return "Event{" +
@@ -95,6 +114,8 @@ public class Event {
                 ", city='" + city + '\'' +
                 ", dateTime=" + dateTime +
                 ", status='" + status + '\'' +
+                ", organizerId=" + organizerId +
+                ", ticketTypes=" + ticketTypes +
                 '}';
     }
 
@@ -105,6 +126,8 @@ public class Event {
         private String city;
         private LocalDateTime dateTime;
         private String status;
+        private Integer organizerId;
+        private List<TicketType> ticketTypes;
 
         public Builder title(String title){
             this.title = title;
@@ -136,8 +159,18 @@ public class Event {
             return this;
         }
 
+        public Builder organizerId(Integer organizerId){
+            this.organizerId = organizerId;
+            return this;
+        }
+
+        public Builder ticketTypes(List<TicketType> ticketTypes){
+            this.ticketTypes = ticketTypes;
+            return this;
+        }
+
         public Event build() {
-            return new Event(title, description, venue, city, dateTime, status);
+            return new Event(title, description, venue, city, dateTime, status, organizerId, ticketTypes);
         }
     }
 }
