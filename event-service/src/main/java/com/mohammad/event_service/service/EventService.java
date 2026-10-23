@@ -5,9 +5,7 @@ import com.mohammad.event_service.dto.CreateEventResponse;
 import com.mohammad.event_service.entity.Event;
 import com.mohammad.event_service.entity.EventStatus;
 import com.mohammad.event_service.entity.TicketType;
-import com.mohammad.event_service.exception.InvalidDateTimeException;
-import com.mohammad.event_service.exception.InvalidTicketTypeException;
-import com.mohammad.event_service.exception.NotOrganizerException;
+import com.mohammad.event_service.exception.*;
 import com.mohammad.event_service.repository.EventRepository;
 import com.mohammad.event_service.repository.TicketTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,5 +90,37 @@ public class EventService {
                 (Integer) response.get("id"),
                 event.getTicketTypes()
         ), HttpStatus.CREATED);
+    }
+
+    public ResponseEntity<String> publishEvent(String username, Long event_id, String token) {
+        Event event = eventRepository.findById(event_id)
+                .orElseThrow(() -> new EventNotFoundException("Event not found"));
+
+        RestClient restClient = RestClient.create();
+
+        LinkedHashMap<String, Object> response = restClient
+                .get()
+                .uri("http://localhost:8081/api/users/my-profile/username").header(
+                        "Authorization", "Bearer " + token)
+                .retrieve()
+                .body(LinkedHashMap.class);
+
+        Integer userId = (Integer) response.get("id");
+
+        // check for organizer
+        if(!event.getOrganizerId().equals(userId)){
+            throw new NotOrganizerException("You are not authorized to publish this event");
+        }
+
+        // check if not draft event
+        if(!event.getStatus().equals("DRAFT")){
+            throw new NotDraftEventException("Event is not in draft state");
+        }
+
+        // changing event status to published
+        event.setStatus("PUBLISHED");
+        eventRepository.save(event);
+
+        return new ResponseEntity<>("Event published successfully", HttpStatus.OK);
     }
 }
