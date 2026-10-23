@@ -12,4 +12,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleNotOrganizerException(NotOrganizerException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
     }
+
+    @ExceptionHandler(InvalidTicketTypeException.class)
+    public ResponseEntity<String> handleInvalidTicketTypeException(InvalidTicketTypeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidDateTimeException.class)
+    public ResponseEntity<String> handleInvalidDateTimeException(InvalidDateTimeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
 }

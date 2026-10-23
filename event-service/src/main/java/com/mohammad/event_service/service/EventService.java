@@ -5,6 +5,8 @@ import com.mohammad.event_service.dto.CreateEventResponse;
 import com.mohammad.event_service.entity.Event;
 import com.mohammad.event_service.entity.EventStatus;
 import com.mohammad.event_service.entity.TicketType;
+import com.mohammad.event_service.exception.InvalidDateTimeException;
+import com.mohammad.event_service.exception.InvalidTicketTypeException;
 import com.mohammad.event_service.exception.NotOrganizerException;
 import com.mohammad.event_service.repository.EventRepository;
 import com.mohammad.event_service.repository.TicketTypeRepository;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 
 @Service
@@ -37,8 +40,19 @@ public class EventService {
 
         String role = (String) response.get("role");
 
+        // check if user is organizer
         if(role == null || !role.equals("ORGANIZER")){
             throw new NotOrganizerException("You are not an organizer to create an event");
+        }
+
+        // check if number of ticket types is less than 5 and at least one
+        if(eventRequest.ticket_types().size() < 1 || eventRequest.ticket_types().size() > 5){
+            throw new InvalidTicketTypeException("An event must have between 1 and 5 ticket types");
+        }
+
+        // check if datetime is before 24 hours from now
+        if(eventRequest.dateTime().isBefore(LocalDateTime.now().plusHours(24))){
+            throw new InvalidDateTimeException("Event datetime must be at least 24 hours from now");
         }
 
         Event event = new Event.Builder()
