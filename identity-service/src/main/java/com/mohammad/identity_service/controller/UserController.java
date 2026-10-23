@@ -2,6 +2,7 @@ package com.mohammad.identity_service.controller;
 
 import com.mohammad.identity_service.dto.ProfileEditRequest;
 import com.mohammad.identity_service.dto.ProfileResponse;
+import com.mohammad.identity_service.dto.UserDetailsServiceStructure;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,7 @@ public class UserController {
     }
 
     @GetMapping("/my-profile/username")
-    public Optional<AppUser> findByUsername(Principal principal) {
+    public ResponseEntity<UserDetailsServiceStructure> findByUsername(Principal principal) {
         return userService.findByUsername(principal.getName());
     }
 }

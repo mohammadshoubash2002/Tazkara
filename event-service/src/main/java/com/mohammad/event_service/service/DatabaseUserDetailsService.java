@@ -1,8 +1,6 @@
 package com.mohammad.event_service.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import com.mohammad.event_service.dto.UserDetailsServiceStructure;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -10,33 +8,33 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.LinkedHashMap;
+
 @Service
 public class DatabaseUserDetailsService implements UserDetailsService {
-    private Object user;
+    private UserDetailsServiceStructure user;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-
-        // Step 1: find the user in our table
-        Object appUser = this.user;
-
-        // Step 2: describe him in Spring Security's language
-        return User.withUsername("appUser.username()")
-                .password("appUser.password()")
-                .roles("appUser.role()")
+        return User.withUsername(user.username())
+                .password(user.password())
+                .roles(user.role())
                 .build();
     }
 
-    public Object getUserFromIdentityService(String token){
-        // endpoint to get the app user from the identity service
+    public void getUserFromIdentityService(String token){
         RestClient restClient = RestClient.create();
-        Object response = restClient
+        LinkedHashMap<String, Object> response = restClient
                 .get()
-                .uri("http://localhost:8081/api/users/my-profile").header(
+                .uri("http://localhost:8081/api/users/my-profile/username").header(
                         "Authorization", "Bearer " + token)
                 .retrieve()
-                .body(Object.class);
+                .body(LinkedHashMap.class);
 
-        return response;
+        user = new UserDetailsServiceStructure(
+                (String) response.get("username"),
+                (String) response.get("password"),
+                (String) response.get("role")
+        );
     }
 }

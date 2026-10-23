@@ -132,7 +132,8 @@ public class UserService {
         );
     }
 
-    public Optional<AppUser> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public ResponseEntity<UserDetailsServiceStructure> findByUsername(String username) {
+        AppUser user = userRepository.findByUsername(username).get();
+        return ResponseEntity.ok(new UserDetailsServiceStructure(user.getUsername(), user.getPassword(), user.getRole()));
     }
 }
