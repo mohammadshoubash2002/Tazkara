@@ -20,6 +20,7 @@ public class Event {
     private String city;
     private LocalDateTime dateTime;
     private String status;
+    private Integer organizerId;
 
     @Size(min = 1, max = 5, message = "An event must have between 1 and 5 ticket types")
     @OneToMany(mappedBy = "event")
