@@ -15,13 +15,13 @@ public class DatabaseUserDetailsService implements UserDetailsService {
     private UserRepository repository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Step 1: find the user in our table
-        AppUser appUser = repository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        AppUser appUser = repository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         // Step 2: describe him in Spring Security's language
-        return User.withUsername(appUser.getEmail())
+        return User.withUsername(appUser.getUsername())
                 .password(appUser.getPassword())
                 .roles(appUser.getRole())
                 .build();

@@ -55,6 +55,7 @@ public class UserService {
         }
 
         AppUser user = new AppUser.Builder()
+                .username(registerRequest.username())
                 .name(registerRequest.name())
                 .email(registerRequest.email())
                 .password(encoder.encode(registerRequest.password()))
@@ -92,7 +93,7 @@ public class UserService {
 
         return ResponseEntity.ok(
                 new ProfileResponse(
-                        "Profile data retrieved successfully", appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
+                        "Profile data retrieved successfully", appUser.getUsername(), appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
                 )
         );
     }
@@ -112,7 +113,7 @@ public class UserService {
 
         return ResponseEntity.ok(
                 new ProfileResponse(
-                        "Profile updated successfully", appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
+                        "Profile updated successfully", appUser.getUsername(), appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
                 )
         );
     }
