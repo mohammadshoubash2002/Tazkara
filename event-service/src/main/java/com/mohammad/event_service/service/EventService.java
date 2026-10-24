@@ -11,6 +11,7 @@ import com.mohammad.event_service.repository.TicketTypeRepository;
 import com.mohammad.event_service.specification.EventSpecification;
 import com.mohammad.event_service.specification.MyEventsSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -31,12 +32,15 @@ public class EventService {
     @Autowired
     private TicketTypeRepository ticketTypeRepository;
 
+    @Value("${identity.service.url:http://localhost:8081}")
+    private String identityServiceUrl;
+
     public ResponseEntity<CreateEventResponse> createEvent(CreateEventRequest eventRequest, String token) {
         RestClient restClient = RestClient.create();
 
         LinkedHashMap<String, Object> response = restClient
                 .get()
-                .uri("http://localhost:8081/api/users/my-profile/username").header(
+                .uri(identityServiceUrl + "/api/users/my-profile/username").header(
                         "Authorization", "Bearer " + token)
                 .retrieve()
                 .body(LinkedHashMap.class);
@@ -106,7 +110,7 @@ public class EventService {
 
         LinkedHashMap<String, Object> response = restClient
                 .get()
-                .uri("http://localhost:8081/api/users/my-profile/username").header(
+                .uri(identityServiceUrl + "/api/users/my-profile/username").header(
                         "Authorization", "Bearer " + token)
                 .retrieve()
                 .body(LinkedHashMap.class);
@@ -190,7 +194,7 @@ public class EventService {
 
         LinkedHashMap<String, Object> response = restClient
                 .get()
-                .uri("http://localhost:8081/api/users/my-profile/username").header(
+                .uri(identityServiceUrl + "/api/users/my-profile/username").header(
                         "Authorization", "Bearer " + token)
                 .retrieve()
                 .body(LinkedHashMap.class);
@@ -250,7 +254,7 @@ public class EventService {
 
         LinkedHashMap<String, Object> response = restClient
                 .get()
-                .uri("http://localhost:8081/api/users/my-profile/username")
+                .uri(identityServiceUrl + "/api/users/my-profile/username")
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .body(LinkedHashMap.class);

@@ -6,19 +6,28 @@ services:
     container_name: identity-service
     ports:
       - "8081:8081"
-    environment:
-      # - SPRING_APPLICATION_JSON={"eureka":{"client":{"serviceUrl":{"defaultZone":"http://service-registry:8761/eureka/"}}}}
-      # - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://service-registry:8761/eureka/
-      # - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-    depends_on:
-      # - service-registry
     volumes:
       - identity-service-data:/app/data
     networks:
       - default
 
+  event-service:
+    build: ./event-service
+    container_name: event-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - identity-service
+    environment:
+      - IDENTITY_SERVICE_URL=http://identity-service:8081
+    volumes:
+      - event-service-data:/app/data
+    networks:
+      - default
+
 volumes: 
   identity-service-data:
+  event-service-data:
 
 networks:
   default:
