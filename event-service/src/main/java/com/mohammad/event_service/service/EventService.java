@@ -9,11 +9,9 @@ import com.mohammad.event_service.exception.*;
 import com.mohammad.event_service.repository.EventRepository;
 import com.mohammad.event_service.repository.TicketTypeRepository;
 import com.mohammad.event_service.specification.EventSpecification;
+import com.mohammad.event_service.specification.MyEventsSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -245,5 +243,34 @@ public class EventService {
         }
 
         return new ResponseEntity<>(event.getDescription(), HttpStatus.OK);
+    }
+
+    public Page<Event> getMyEvents(String token, String status, Integer page, Integer pageSize){
+        RestClient restClient = RestClient.create();
+
+        LinkedHashMap<String, Object> response = restClient
+                .get()
+                .uri("http://localhost:8081/api/users/my-profile/username")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .body(LinkedHashMap.class);
+
+        Integer userId = (Integer) response.get("id");
+
+        // check whether the user is null or the role is not organizer
+        if(userId == null || !response.get("role").equals("ORGANIZER")){
+            throw new EventNotFoundException("User is not organizer");
+        }
+
+        Specification<Event> spec = MyEventsSpecification.buildSpecification(status.toUpperCase(), userId);
+
+        Sort sortObj = Sort.by(Sort.Direction.ASC, "dateTime");
+
+        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
+        int size = (pageSize != null && pageSize > 0) ? pageSize : 10;
+
+        Pageable pageable = PageRequest.of(pageNumber, size, sortObj);
+
+        return eventRepository.findAll(spec, pageable);
     }
 }

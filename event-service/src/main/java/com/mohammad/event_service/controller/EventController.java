@@ -51,4 +51,15 @@ public class EventController {
         String token = request.getHeader("Authorization").substring(7);
         return eventService.publishEvent(event_id, token);
     }
+
+    @GetMapping("/my-events")
+    public PageResponse<Event> getMyEvents(@RequestParam(required = false) String status,
+                                           @RequestParam(required = false, defaultValue = "1") Integer page,
+                                           @RequestParam(required = false, defaultValue = "10") Integer pageSize,
+                                           HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        Page<Event> eventPage = eventService.getMyEvents(token, status, page, pageSize);
+
+        return PageResponse.from(eventPage);
+    }
 }
