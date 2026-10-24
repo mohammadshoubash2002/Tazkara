@@ -17,7 +17,8 @@ public class DatabaseUserDetailsService implements UserDetailsService {
     private final RestClient restClient;
 
     public DatabaseUserDetailsService(RestClient.Builder restClientBuilder,
-                                      @Value("${identity.service.url:http://localhost:8081}") String identityServiceUrl) {
+                                      @Value("${identity.service.url:http://localhost:8081}") String identityServiceUrl,
+                                      @Value("${event.service.url:http://localhost:8082}") String eventServiceUrl) {
         this.restClient = restClientBuilder.baseUrl(identityServiceUrl).build();
     }
 
