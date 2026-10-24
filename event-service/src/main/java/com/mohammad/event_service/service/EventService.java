@@ -1,26 +1,28 @@
 package com.mohammad.event_service.service;
 
-import com.mohammad.event_service.dto.CreateEventRequest;
-import com.mohammad.event_service.dto.CreateEventResponse;
-import com.mohammad.event_service.dto.EditEventRequest;
-import com.mohammad.event_service.dto.EditEventResponse;
+import com.mohammad.event_service.dto.*;
 import com.mohammad.event_service.entity.Event;
 import com.mohammad.event_service.entity.EventStatus;
 import com.mohammad.event_service.entity.TicketType;
+import com.mohammad.event_service.entity.TicketTypeStatus;
 import com.mohammad.event_service.exception.*;
 import com.mohammad.event_service.repository.EventRepository;
 import com.mohammad.event_service.repository.TicketTypeRepository;
+import com.mohammad.event_service.specification.EventSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.security.Principal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -80,6 +82,7 @@ public class EventService {
         ticketTypeRepository.saveAll(event.getTicketTypes().stream()
                 .map(ticketType -> {
                     ticketType.setEvent(event);
+                    ticketType.setStatus(ticketType.getQuantity() == 0 ? TicketTypeStatus.SOLD_OUT.name() : TicketTypeStatus.AVAILABLE.name());
                     return ticketType;
                 })
                 .toList());
@@ -151,6 +154,7 @@ public class EventService {
                         .name(ticketTypeRequest.name())
                         .price(ticketTypeRequest.price())
                         .quantity(ticketTypeRequest.quantity())
+                        .status(ticketTypeRequest.quantity() == 0 ? TicketTypeStatus.SOLD_OUT.name() : TicketTypeStatus.AVAILABLE.name())
                         .event(event)
                         .build())
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -159,6 +163,8 @@ public class EventService {
         if (event.getTicketTypes() == null) {
             event.setTicketTypes(new ArrayList<>());
         } else {
+            // remove the previous ticket types because no more than 5 ticket types are allowed and at least one from database
+            event.getTicketTypes().stream().forEach(ticketType -> ticketType.setEvent(null));
             event.getTicketTypes().clear();
         }
         event.getTicketTypes().addAll(newTicketTypes);
@@ -208,5 +214,36 @@ public class EventService {
         eventRepository.save(event);
 
         return new ResponseEntity<>("Event published successfully", HttpStatus.OK);
+    }
+
+    public Page<Event> getAllEvents(String city, LocalDate from, LocalDate to, String keyword, Integer page, Integer pageSize){
+        Specification<Event> spec = EventSpecification.buildSpecification(city, from, to, keyword);
+
+        Sort sortObj = Sort.by(Sort.Direction.ASC, "dateTime");
+
+        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
+        int size = (pageSize != null && pageSize > 0) ? pageSize : 10;
+
+        Pageable pageable = PageRequest.of(pageNumber, size, sortObj);
+
+        return eventRepository.findAll(spec, pageable);
+    }
+
+    public ResponseEntity<String> getEventDetailsById(Long event_id){
+        Event event = eventRepository.findById(event_id).orElseThrow(
+                () -> new EventNotFoundException("Event not found")
+        );
+
+        // check if draft or cancelled
+        if(event.getStatus().equals(EventStatus.DRAFT.name()) || event.getStatus().equals(EventStatus.CANCELLED.name())){
+            throw new EventNotFoundException("Event is draft or cancelled");
+        }
+
+        // check if the event in the past
+        if(event.getDateTime().isBefore(LocalDateTime.now())){
+            throw new EventNotFoundException("Event is in the past");
+        }
+
+        return new ResponseEntity<>(event.getDescription(), HttpStatus.OK);
     }
 }

@@ -1,22 +1,38 @@
 package com.mohammad.event_service.controller;
 
-import com.mohammad.event_service.dto.CreateEventRequest;
-import com.mohammad.event_service.dto.CreateEventResponse;
-import com.mohammad.event_service.dto.EditEventRequest;
-import com.mohammad.event_service.dto.EditEventResponse;
+import com.mohammad.event_service.dto.*;
+import com.mohammad.event_service.entity.Event;
 import com.mohammad.event_service.service.EventService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/events")
 public class EventController {
     @Autowired
     private EventService eventService;
+
+    @GetMapping
+    public PageResponse<Event> getAllEvents(@RequestParam(required = false) String city,
+                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+                                @RequestParam(required = false) String keyword,
+                                @RequestParam(required = false, defaultValue = "1") Integer page,
+                                @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
+        Page<Event> eventPage = eventService.getAllEvents(city, dateFrom, dateTo, keyword, page, pageSize);
+        return PageResponse.from(eventPage);
+    }
+
+    @GetMapping("/{event_id}/details")
+    public ResponseEntity<String> getEventById(@PathVariable Long event_id) {
+        return eventService.getEventDetailsById(event_id);
+    }
 
     @PostMapping
     public ResponseEntity<CreateEventResponse> createEvent(@RequestBody CreateEventRequest event, HttpServletRequest request) {

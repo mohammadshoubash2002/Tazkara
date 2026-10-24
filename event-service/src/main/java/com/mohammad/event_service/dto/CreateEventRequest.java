@@ -1,7 +1,5 @@
 package com.mohammad.event_service.dto;
 
-import com.mohammad.event_service.entity.TicketType;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
