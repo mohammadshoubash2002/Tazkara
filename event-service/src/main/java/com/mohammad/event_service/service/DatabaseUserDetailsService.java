@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.LinkedHashMap;
 
@@ -15,8 +16,9 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
     private final RestClient restClient;
 
-    public DatabaseUserDetailsService(RestClient.Builder restClientBuilder) {
-        this.restClient = restClientBuilder.baseUrl("http://localhost:8081").build();
+    public DatabaseUserDetailsService(RestClient.Builder restClientBuilder,
+                                      @Value("${identity.service.url:http://localhost:8081}") String identityServiceUrl) {
+        this.restClient = restClientBuilder.baseUrl(identityServiceUrl).build();
     }
 
     @Override

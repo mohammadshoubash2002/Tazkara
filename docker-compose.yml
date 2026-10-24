@@ -1,29 +1,29 @@
 version: '3.8'
 
 services:
-  identity-service:
-    build: ./identity-service
-    container_name: identity-service
-    ports:
-      - "8081:8081"
-    volumes:
-      - identity-service-data:/app/data
-    networks:
-      - default
+    identity-service:
+      build: ./identity-service
+      container_name: identity-service
+      ports:
+        - "8081:8081"
+      volumes:
+        - identity-service-data:/app/data
+      networks:
+        - default
 
-  event-service:
-    build: ./event-service
-    container_name: event-service
-    ports:
-      - "8082:8082"
-    depends_on:
-      - identity-service
-    environment:
-      - IDENTITY_SERVICE_URL=http://identity-service:8081
-    volumes:
-      - event-service-data:/app/data
-    networks:
-      - default
+    event-service:
+      build: ./event-service
+      container_name: event-service
+      ports:
+        - "8082:8082"
+      depends_on:
+        - identity-service
+      environment:
+        - IDENTITY_SERVICE_URL=http://identity-service:8081
+      volumes:
+        - event-service-data:/app/data
+      networks:
+        - default
 
 volumes: 
   identity-service-data:
