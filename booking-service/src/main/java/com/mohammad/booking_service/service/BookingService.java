@@ -7,6 +7,8 @@ import com.mohammad.booking_service.entity.BookingStatus;
 import com.mohammad.booking_service.exception.*;
 import com.mohammad.booking_service.repository.BookingRepository;
 import com.mohammad.booking_service.repository.PaymentRepository;
+import jakarta.transaction.Transactional;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -22,6 +24,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -317,4 +320,112 @@ public class BookingService {
 
         return mapToGetMyBookingsResponse(booking, new HashMap<>());
     }
+
+    @Transactional
+    public ResponseEntity<String> cancelBooking(String reference, String cancellationReason, String token) throws BadRequestException {
+        // 1. Authenticate & ensure user has ATTENDEE role
+        Integer userId = verifyAttendeeAndGetUserId(token);
+
+        // 2. Find booking by reference
+        Booking booking = bookingRepository.findByReference(reference)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
+
+        // 3. Verify Owner only
+        if (!booking.getUserId().equals(userId)) {
+            throw new NotOwnerException("Booking does not belong to the user");
+        }
+
+        // 4. EXPIRED or CANCELLED bookings cannot be cancelled again
+        if (BookingStatus.CANCELLED.name().equalsIgnoreCase(booking.getStatus())) {
+            throw new BadRequestException("Booking is already cancelled");
+        }
+        if (BookingStatus.EXPIRED.name().equalsIgnoreCase(booking.getStatus())) {
+            throw new BadRequestException("Booking has expired and cannot be cancelled");
+        }
+
+        double refundAmount = 0.0;
+
+        // 5. Handle CONFIRMED vs PENDING_PAYMENT
+        if (BookingStatus.CONFIRMED.name().equalsIgnoreCase(booking.getStatus())) {
+            // Fetch event to get start date
+            RestClient restClient = RestClient.create();
+            LinkedHashMap<?, ?> eventResponse;
+            try {
+                eventResponse = restClient
+                        .get()
+                        .uri(eventServiceUrl + "/api/events/" + booking.getEventId())
+                        .retrieve()
+                        .body(LinkedHashMap.class);
+            } catch (Exception ex) {
+                throw new EventStatusException("Event not found");
+            }
+
+            if (eventResponse == null || eventResponse.get("dateTime") == null) {
+                throw new EventStatusException("Unable to retrieve event date");
+            }
+
+            LocalDateTime eventStartDate = LocalDateTime.parse((String) eventResponse.get("dateTime"));
+            LocalDateTime now = LocalDateTime.now();
+
+            // If event has already started or less than 48 hours remaining: not allowed
+            if (eventStartDate.isBefore(now)) {
+                throw new BadRequestException("Cannot cancel booking for an event that has already started");
+            }
+
+            Duration duration = Duration.between(now, eventStartDate);
+            long hours = duration.toHours();
+
+            if (hours < 48) {
+                throw new BadRequestException("Cancellation is not allowed under 48 hours before the event starts");
+            } else if (hours >= 168) { // 7+ days (7 * 24 = 168 hours)
+                refundAmount = booking.getTotalAmount() != null ? booking.getTotalAmount() : 0.0;
+            } else { // 48 hours to 7 days: 50%
+                refundAmount = (booking.getTotalAmount() != null ? booking.getTotalAmount() : 0.0) * 0.5;
+            }
+        } else if (BookingStatus.PENDING_PAYMENT.name().equalsIgnoreCase(booking.getStatus())) {
+            // PENDING_PAYMENT can be cancelled any time, no refund
+            refundAmount = 0.0;
+        } else {
+            throw new BadRequestException("Booking status " + booking.getStatus() + " cannot be cancelled");
+        }
+
+        // 6. Update booking status, cancellation reason, and record refund
+        booking.setStatus(BookingStatus.CANCELLED.name());
+        booking.setRefund(refundAmount);
+        booking.setCancellationReason(cancellationReason != null && !cancellationReason.isBlank()
+                ? cancellationReason
+                : "Cancelled by user");
+
+        bookingRepository.save(booking);
+
+        // 7. Tickets return to availability (Release tickets in event-service)
+        freeTickets(booking);
+
+        return ResponseEntity.ok("Booking cancelled successfully");
+    }
+
+    private void freeTickets(Booking booking) {
+        if (booking.getItems() == null || booking.getItems().isEmpty() || booking.getEventId() == null) {
+            return;
+        }
+
+        Map<String, Integer> ticketCounts = new HashMap<>();
+        for (BookingItem item : booking.getItems()) {
+            ticketCounts.merge(item.getTicketTypeName(), item.getQuantity(), Integer::sum);
+        }
+
+        EventTicketTypeData releaseRequest = new EventTicketTypeData(booking.getEventId(), ticketCounts);
+
+        try {
+            RestClient restClient = RestClient.create();
+            restClient.put()
+                    .uri(eventServiceUrl + "/api/ticket-types/release")
+                    .body(releaseRequest)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to release tickets in event-service: " + ex.getMessage(), ex);
+        }
+    }
+
 }

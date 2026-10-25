@@ -1,11 +1,13 @@
 package com.mohammad.booking_service.controller;
 
 import com.mohammad.booking_service.dto.AddBookingRequest;
+import com.mohammad.booking_service.dto.CancelBookingRequest;
 import com.mohammad.booking_service.dto.GetMyBookingsResponse;
 import com.mohammad.booking_service.dto.PageResponse;
 import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.service.BookingService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -43,4 +45,16 @@ public class BookingController {
         String token = request.getHeader("Authorization").substring(7);
         return ResponseEntity.ok(bookingService.getBookingByReference(reference, token));
     }
+
+
+    @PatchMapping("/{reference}/cancel")
+    public ResponseEntity<String> cancelBooking (
+            @PathVariable String reference,
+            @RequestBody(required = false) CancelBookingRequest cancelRequest,
+            HttpServletRequest request) throws BadRequestException {
+        String token = request.getHeader("Authorization").substring(7);
+        String reason = (cancelRequest != null) ? cancelRequest.reason() : null;
+        return bookingService.cancelBooking(reference, reason, token);
+    }
+
 }
