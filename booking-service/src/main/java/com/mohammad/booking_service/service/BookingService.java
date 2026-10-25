@@ -7,8 +7,10 @@ import com.mohammad.booking_service.dto.ReservedTicketsResponse;
 import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.entity.BookingItem;
 import com.mohammad.booking_service.entity.BookingStatus;
+import com.mohammad.booking_service.entity.Payment;
 import com.mohammad.booking_service.exception.*;
 import com.mohammad.booking_service.repository.BookingRepository;
+import com.mohammad.booking_service.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -34,6 +36,9 @@ public class BookingService {
 
     @Autowired
     private BookingRepository bookingRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String REFERENCE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -170,4 +175,6 @@ public class BookingService {
 
         return reference;
     }
+
+
 }

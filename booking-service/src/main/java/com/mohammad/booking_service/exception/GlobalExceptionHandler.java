@@ -42,4 +42,30 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleTicketIsNotAvailableException(TicketIsNotAvailableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
+
+    @ExceptionHandler(BookingNotFoundException.class)
+    public ResponseEntity<String> handleBookingNotFoundException(BookingNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(BookingExpiredException.class)
+    public ResponseEntity<String> handleBookingExpiredException(BookingExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(NotOwnerException.class)
+    public ResponseEntity<String> handleNotOwnerException(NotOwnerException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(NotPendingStatusException.class)
+    public ResponseEntity<String> handleNotPendingStatusException(NotPendingStatusException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(PaymentMethodException.class)
+    public ResponseEntity<String> handlePaymentMethodException(PaymentMethodException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
 }
