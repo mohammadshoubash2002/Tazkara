@@ -106,4 +106,31 @@ public class TicketTypeService {
 
         return ResponseEntity.ok(new ReservedTicketsResponse(ticketTypesRequest.eventId(), reservedItems));
     }
+
+    @Transactional
+    public ResponseEntity<Void> releaseTickets(EventTicketTypeData ticketTypesRequest) {
+        if (ticketTypesRequest == null || ticketTypesRequest.eventId() == null || ticketTypesRequest.ticketTypeCountList() == null || ticketTypesRequest.ticketTypeCountList().isEmpty()) {
+            return ResponseEntity.ok().build();
+        }
+
+        Map<String, Integer> requestedMap = ticketTypesRequest.ticketTypeCountList();
+        Set<String> requestedNames = requestedMap.keySet();
+
+        // Lock rows with PESSIMISTIC_WRITE so concurrent reservations and releases don't conflict
+        List<TicketType> lockedTicketTypes = ticketTypeRepository.findByEventIdAndNameInForUpdate(ticketTypesRequest.eventId(), requestedNames);
+
+        for (TicketType ticketType : lockedTicketTypes) {
+            Integer releaseQty = requestedMap.get(ticketType.getName());
+            if (releaseQty != null && releaseQty > 0) {
+                int updatedQuantity = ticketType.getQuantity() + releaseQty;
+                ticketType.setQuantity(updatedQuantity);
+                if (updatedQuantity > 0 && TicketTypeStatus.SOLD_OUT.name().equalsIgnoreCase(ticketType.getStatus())) {
+                    ticketType.setStatus(TicketTypeStatus.AVAILABLE.name());
+                }
+            }
+        }
+
+        ticketTypeRepository.saveAll(lockedTicketTypes);
+        return ResponseEntity.ok().build();
+    }
 }

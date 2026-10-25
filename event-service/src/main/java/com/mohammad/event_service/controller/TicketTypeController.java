@@ -25,4 +25,9 @@ public class TicketTypeController {
     public ResponseEntity<ReservedTicketsResponse> editTicketTypes(@RequestBody EventTicketTypeData eventTicketTypeData) {
         return ticketTypeService.reserveTickets(eventTicketTypeData);
     }
+
+    @PutMapping("/release")
+    public ResponseEntity<Void> releaseTicketTypes(@RequestBody EventTicketTypeData eventTicketTypeData) {
+        return ticketTypeService.releaseTickets(eventTicketTypeData);
+    }
 }

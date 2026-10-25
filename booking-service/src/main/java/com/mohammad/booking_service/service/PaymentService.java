@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ public class PaymentService {
     @Autowired
     private PaymentRepository paymentRepository;
 
+    @Transactional
     public ResponseEntity<String> payForBooking(Integer booking_id, PaymentRequest paymentRequest, String token){
         RestClient restClient = RestClient.create();
 
@@ -53,8 +55,8 @@ public class PaymentService {
 
         Integer userId = (Integer) identityResponse.get("id");
 
-        // 2. Verify booking exists
-        Booking booking = bookingRepository.findById(Long.valueOf(booking_id)).orElse(null);
+        // 2. Lock and verify booking exists with PESSIMISTIC_WRITE lock
+        Booking booking = bookingRepository.findByIdForUpdate(Long.valueOf(booking_id)).orElse(null);
         if (booking == null) {
             throw new BookingNotFoundException("Booking not found");
         }
@@ -70,7 +72,7 @@ public class PaymentService {
         }
 
         // 5. Verify booking hold time has not passed
-        if (booking.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (booking.getExpiresAt() != null && booking.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new BookingExpiredException("Booking hold time has passed");
         }
 
@@ -115,7 +117,7 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         // 10. Update booking status
-        booking.setStatus("CONFIRMED");
+        booking.setStatus(BookingStatus.CONFIRMED.name());
         bookingRepository.save(booking);
 
         return new ResponseEntity<>("Payment Done for booking: " + booking.getReference(), HttpStatus.OK);
