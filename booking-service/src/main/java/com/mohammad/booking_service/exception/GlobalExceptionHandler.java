@@ -19,8 +19,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(EventNotInTheFutureException.class)
-    public ResponseEntity<String> handleBookingNotFoundException(EventNotInTheFutureException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    public ResponseEntity<String> handleEventNotInTheFutureException(EventNotInTheFutureException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
     @ExceptionHandler(NumberOfTicketsException.class)

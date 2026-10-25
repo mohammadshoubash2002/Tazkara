@@ -2,7 +2,6 @@ package com.mohammad.event_service.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -35,6 +34,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidEventStatusException.class)
     public ResponseEntity<String> handleInvalidEventStatusException(InvalidEventStatusException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(TicketIsNotAvailableException.class)
+    public ResponseEntity<String> handleTicketIsNotAvailableException(TicketIsNotAvailableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }
