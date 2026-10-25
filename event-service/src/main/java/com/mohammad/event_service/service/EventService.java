@@ -279,4 +279,18 @@ public class EventService {
 
         return eventRepository.findAll(spec, pageable);
     }
+
+    public ResponseEntity<GetEventResponse> getEvent(Long event_id){
+        Event event =  eventRepository.findById(event_id).get();
+
+        return new ResponseEntity<>(new GetEventResponse(
+                event.getTitle(),
+                event.getDescription(),
+                event.getVenue(),
+                event.getCity(),
+                event.getDateTime(),
+                event.getStatus(),
+                event.getTicketTypes()
+        ), HttpStatus.OK);
+    }
 }

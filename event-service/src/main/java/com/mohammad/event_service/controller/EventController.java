@@ -62,4 +62,10 @@ public class EventController {
 
         return PageResponse.from(eventPage);
     }
+
+    @GetMapping("/{event_id}")
+    public ResponseEntity<GetEventResponse> getEvent(@PathVariable Long event_id, HttpServletRequest request) {
+//        String token = request.getHeader("Authorization").substring(7);
+        return eventService.getEvent(event_id);
+    }
 }
