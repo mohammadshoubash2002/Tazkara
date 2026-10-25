@@ -31,13 +31,19 @@ public class Booking {
 
     private LocalDateTime createdAt;
 
+    @Column(nullable = true)
+    private String cancellationReason;
+
+    @Column(nullable = true)
+    private Double refund;
+
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookingItem> items = new ArrayList<>();
 
     public Booking() {
     }
 
-    public Booking(String reference, Integer userId, Integer eventId, Integer ticketsCount, Double totalAmount, String status, LocalDateTime expiresAt, LocalDateTime createdAt, List<BookingItem> items) {
+    public Booking(String reference, Integer userId, Integer eventId, Integer ticketsCount, Double totalAmount, String status, LocalDateTime expiresAt, LocalDateTime createdAt, String cancellationReason, Double refund, List<BookingItem> items) {
         this.reference = reference;
         this.userId = userId;
         this.eventId = eventId;
@@ -46,6 +52,8 @@ public class Booking {
         this.status = status;
         this.expiresAt = expiresAt;
         this.createdAt = createdAt;
+        this.cancellationReason = cancellationReason;
+        this.refund = refund;
         if (items != null) {
             this.items = items;
             for (BookingItem item : items) {
@@ -127,6 +135,22 @@ public class Booking {
         this.createdAt = createdAt;
     }
 
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public Double getRefund() {
+        return refund;
+    }
+
+    public void setRefund(Double refund) {
+        this.refund = refund;
+    }
+
     public List<BookingItem> getItems() {
         return items;
     }
@@ -144,6 +168,8 @@ public class Booking {
         private String status;
         private LocalDateTime expiresAt;
         private LocalDateTime createdAt;
+        private String cancellationReason;
+        private Double refund;
         private List<BookingItem> items = new ArrayList<>();
 
         public Builder reference(String reference) {
@@ -186,13 +212,23 @@ public class Booking {
             return this;
         }
 
+        public Builder cancellationReason(String cancellationReason) {
+            this.cancellationReason = cancellationReason;
+            return this;
+        }
+
+        public Builder refund(Double refund) {
+            this.refund = refund;
+            return this;
+        }
+
         public Builder items(List<BookingItem> items) {
             this.items = items;
             return this;
         }
 
         public Booking build() {
-            return new Booking(reference, userId, eventId, ticketsCount, totalAmount, status, expiresAt, createdAt, items);
+            return new Booking(reference, userId, eventId, ticketsCount, totalAmount, status, expiresAt, createdAt, cancellationReason, refund, items);
         }
     }
 }

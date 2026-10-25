@@ -1,18 +1,20 @@
 package com.mohammad.booking_service.service;
 
-import com.mohammad.booking_service.dto.AddBookingRequest;
-import com.mohammad.booking_service.dto.EventTicketTypeData;
-import com.mohammad.booking_service.dto.ReservedTicketItemDto;
-import com.mohammad.booking_service.dto.ReservedTicketsResponse;
+import com.mohammad.booking_service.dto.*;
 import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.entity.BookingItem;
 import com.mohammad.booking_service.entity.BookingStatus;
-import com.mohammad.booking_service.entity.Payment;
 import com.mohammad.booking_service.exception.*;
 import com.mohammad.booking_service.repository.BookingRepository;
 import com.mohammad.booking_service.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import com.mohammad.booking_service.specification.BookingSpecification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -176,5 +178,143 @@ public class BookingService {
         return reference;
     }
 
+    private Integer verifyAttendeeAndGetUserId(String token) {
+        RestClient restClient = RestClient.create();
 
+        LinkedHashMap<?, ?> identityResponse;
+        try {
+            identityResponse = restClient
+                    .get()
+                    .uri(identityServiceUrl + "/api/users/my-profile/username")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .body(LinkedHashMap.class);
+        } catch (Exception ex) {
+            throw new NotAttendeeException("Unable to verify user role");
+        }
+
+        if (identityResponse == null || identityResponse.get("role") == null) {
+            throw new NotAttendeeException("Unable to verify user role");
+        }
+
+        String role = (String) identityResponse.get("role");
+        if (!role.toUpperCase().equals("ATTENDEE")) {
+            throw new NotAttendeeException("Only attendees can view bookings");
+        }
+
+        Integer userId = (Integer) identityResponse.get("id");
+        if (userId == null) {
+            throw new NotAttendeeException("Unable to verify user identity");
+        }
+
+        return userId;
+    }
+
+    private GetMyBookingsResponse mapToGetMyBookingsResponse(Booking booking, Map<Integer, EventSummaryDto> eventCache) {
+        RestClient restClient = RestClient.create();
+
+        EventSummaryDto eventDto = null;
+
+        if (booking.getEventId() != null) {
+            if (eventCache != null && eventCache.containsKey(booking.getEventId())) {
+                eventDto = eventCache.get(booking.getEventId());
+            } else {
+                LinkedHashMap<?, ?> eventResponse = restClient
+                        .get()
+                        .uri(eventServiceUrl + "/api/events/" + booking.getEventId())
+                        .retrieve()
+                        .body(LinkedHashMap.class);
+
+                if (eventResponse != null) {
+                    String title = (String) eventResponse.get("title");
+                    String description = (String) eventResponse.get("description");
+                    String venue = (String) eventResponse.get("venue");
+                    String city = (String) eventResponse.get("city");
+                    String dateTimeStr = (String) eventResponse.get("dateTime");
+                    LocalDateTime dateTime = (dateTimeStr != null) ? LocalDateTime.parse(dateTimeStr) : null;
+                    String eventStatus = (String) eventResponse.get("status");
+
+                    eventDto = new EventSummaryDto(
+                            booking.getEventId(),
+                            title,
+                            description,
+                            venue,
+                            city,
+                            dateTime,
+                            eventStatus
+                    );
+                } else {
+                    throw new EventStatusException("Failed to retrieve event details");
+                }
+
+                if (eventCache != null && eventDto != null) {
+                    eventCache.put(booking.getEventId(), eventDto);
+                }
+            }
+        }
+
+        List<BookingItemDto> ticketTypes = new ArrayList<>();
+        if (booking.getItems() != null) {
+            for (BookingItem item : booking.getItems()) {
+                ticketTypes.add(new BookingItemDto(
+                        item.getTicketTypeName(),
+                        item.getQuantity(),
+                        item.getPrice()
+                ));
+            }
+        }
+
+        LocalDateTime holdExpiry = BookingStatus.PENDING_PAYMENT.name().equalsIgnoreCase(booking.getStatus())
+                ? booking.getExpiresAt()
+                : null;
+
+        return new GetMyBookingsResponse(
+                booking.getReference(),
+                eventDto,
+                ticketTypes,
+                booking.getTicketsCount(),
+                booking.getTotalAmount(),
+                booking.getStatus(),
+                holdExpiry,
+                booking.getCancellationReason(),
+                booking.getRefund(),
+                booking.getCreatedAt()
+        );
+    }
+
+    public Page<GetMyBookingsResponse> getMyBookings(String status, Integer page, Integer pageSize, String token) {
+        // get the user details & verify role is attendee
+        Integer userId = verifyAttendeeAndGetUserId(token);
+
+        // make specification and paginated based on the status (newest first)
+        int pageNumber = (page != null && page > 0) ? page - 1 : 0;
+        int size = (pageSize != null && pageSize > 0) ? pageSize : 10;
+
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"));
+        Pageable pageable = PageRequest.of(pageNumber, size, sort);
+
+        Specification<Booking> spec = BookingSpecification.buildSpecification(userId, status);
+
+        // get bookings
+        Page<Booking> bookingPage = bookingRepository.findAll(spec, pageable);
+
+        // map to GetMyBookingsResponse and return the page
+        Map<Integer, EventSummaryDto> eventCache = new HashMap<>();
+        return bookingPage.map(booking -> mapToGetMyBookingsResponse(booking, eventCache));
+    }
+
+    public GetMyBookingsResponse getBookingByReference(String reference, String token) {
+        // get the user details & verify role is attendee
+        Integer userId = verifyAttendeeAndGetUserId(token);
+
+        Booking booking = bookingRepository.findByReference(reference)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
+
+        // another user's booking is never visible (not found)
+        if (!booking.getUserId().equals(userId)) {
+            throw new BookingNotFoundException("Booking not found");
+        }
+
+        return mapToGetMyBookingsResponse(booking, new HashMap<>());
+    }
 }
