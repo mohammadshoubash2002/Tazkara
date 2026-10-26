@@ -4,6 +4,7 @@ import com.mohammad.booking_service.dto.*;
 import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.entity.BookingItem;
 import com.mohammad.booking_service.entity.BookingStatus;
+import com.mohammad.booking_service.entity.Payment;
 import com.mohammad.booking_service.exception.*;
 import com.mohammad.booking_service.repository.BookingItemRepository;
 import com.mohammad.booking_service.repository.BookingRepository;
@@ -23,6 +24,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -614,5 +621,92 @@ public class BookingService {
         } catch (NumberFormatException e) {
             throw new EventStatusException("Event not found");
         }
+    }
+
+    public byte[] exportConfirmedBookingsCsv(Integer eventId, String token) {
+        // 1. Verify caller is Organizer and owns the event
+        Integer userId = verifyOrganizerAndGetUserId(token);
+
+        RestClient restClient = RestClient.create();
+        LinkedHashMap<?, ?> eventResponse;
+        try {
+            eventResponse = restClient
+                    .get()
+                    .uri(eventServiceUrl + "/api/events/" + eventId)
+                    .retrieve()
+                    .body(LinkedHashMap.class);
+        } catch (Exception ex) {
+            throw new EventStatusException("Event not found");
+        }
+
+        if (eventResponse == null) {
+            throw new EventStatusException("Event not found");
+        }
+
+        Integer organizerId = (Integer) eventResponse.get("organizerId");
+
+        if (organizerId != userId) {
+            throw new NotOwnerException("You are not authorized to export bookings for this event.");
+        }
+
+        // 2. Fetch CONFIRMED bookings only
+        List<Booking> confirmedBookings = bookingRepository.findByEventIdAndStatus(eventId, "CONFIRMED");
+
+        // 3. Generate CSV using Java I/O classes
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(baos, StandardCharsets.UTF_8))) {
+            // CSV Header
+            writer.println("reference,attendee email,ticket type,quantity,unit price,line total,confirmed at");
+
+
+            Map<Integer, String> userEmailCache = new HashMap<>();
+            DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            for (Booking booking : confirmedBookings) {
+                String attendeeEmail = getAttendeeEmail(booking.getUserId(), token, userEmailCache);
+
+                // Determine confirmedAt: from Payment record or fallback to createdAt (e.g. for free bookings)
+                String confirmedAtStr = "";
+                Optional<Payment> paymentOpt = paymentRepository.findByBookingId(booking.getId());
+                if (paymentOpt.isPresent() && paymentOpt.get().getPaymentTime() != null) {
+                    confirmedAtStr = paymentOpt.get().getPaymentTime().format(dtFormatter);
+                } else if (booking.getCreatedAt() != null) {
+                    confirmedAtStr = booking.getCreatedAt().format(dtFormatter);
+                }
+
+                if (booking.getItems() != null) {
+                    for (BookingItem item : booking.getItems()) {
+                        int quantity = item.getQuantity() != null ? item.getQuantity() : 0;
+                        double unitPrice = item.getPrice() != null ? item.getPrice() : 0.0;
+                        double lineTotal = quantity * unitPrice;
+
+                        writer.printf("%s,%s,%s,%d,%.2f,%.2f,%s%n",
+                                escapeCsv(booking.getReference()),
+                                escapeCsv(attendeeEmail),
+                                escapeCsv(item.getTicketTypeName()),
+                                quantity,
+                                unitPrice,
+                                lineTotal,
+                                escapeCsv(confirmedAtStr)
+                        );
+                    }
+                }
+            }
+            writer.flush();
+        }
+
+        return baos.toByteArray();
+    }
+
+    private String escapeCsv(Object value) {
+        if (value == null) {
+            return "";
+        }
+        String str = String.valueOf(value);
+        // If field contains comma, quote, or newline, escape double-quotes and enclose in quotes
+        if (str.contains(",") || str.contains("\"") || str.contains("\n") || str.contains("\r")) {
+            return "\"" + str.replace("\"", "\"\"") + "\"";
+        }
+        return str;
     }
 }

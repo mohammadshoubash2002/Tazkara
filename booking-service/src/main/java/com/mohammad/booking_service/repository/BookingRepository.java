@@ -34,4 +34,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     List<Long> findOverduePendingBookingIds(@Param("now") LocalDateTime now);
 
     List<Booking> findByEventId(Integer eventId);
+
+    List<Booking> findByEventIdAndStatus(Integer eventId, String status);
 }

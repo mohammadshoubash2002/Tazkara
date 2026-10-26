@@ -7,8 +7,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -67,5 +71,22 @@ public class BookingController {
 
         GetEventSales sales = bookingService.getSalesByEvent(eventId, status, page, limit, token);
         return ResponseEntity.ok(sales);
+    }
+
+    @GetMapping({"/{eventId}/export", "/event/{eventId}/export"})
+    public ResponseEntity<byte[]> exportConfirmedBookings(
+            @PathVariable Integer eventId,
+            HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+
+        byte[] csvData = bookingService.exportConfirmedBookingsCsv(eventId, token);
+
+        String exportDate = LocalDate.now().toString();
+        String filename = String.format("event-%d-confirmed-bookings-%s.csv", eventId, exportDate);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csvData);
     }
 }
