@@ -136,4 +136,14 @@ public class UserService {
         AppUser user = userRepository.findByUsername(username).get();
         return ResponseEntity.ok(new UserDetailsServiceStructure(user.getId(), user.getUsername(), user.getPassword(), user.getRole()));
     }
+
+    public ResponseEntity<ProfileResponse> getUserById(Long id) {
+        AppUser appUser = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return ResponseEntity.ok(
+                new ProfileResponse(
+                        "Profile data retrieved successfully", appUser.getUsername(), appUser.getName(), appUser.getEmail(), appUser.getRole(), appUser.getOrganizationName()
+                )
+        );
+    }
 }
+

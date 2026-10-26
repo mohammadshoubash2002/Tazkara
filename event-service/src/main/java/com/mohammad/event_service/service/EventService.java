@@ -281,7 +281,9 @@ public class EventService {
     }
 
     public ResponseEntity<GetEventResponse> getEvent(Long event_id){
-        Event event =  eventRepository.findById(event_id).get();
+        Event event = eventRepository.findById(event_id).orElseThrow(
+                () -> new EventNotFoundException("Event not found")
+        );
 
         return new ResponseEntity<>(new GetEventResponse(
                 event.getTitle(),
@@ -290,6 +292,7 @@ public class EventService {
                 event.getCity(),
                 event.getDateTime(),
                 event.getStatus(),
+                event.getOrganizerId(),
                 event.getTicketTypes()
         ), HttpStatus.OK);
     }

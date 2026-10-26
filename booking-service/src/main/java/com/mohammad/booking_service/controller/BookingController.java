@@ -1,9 +1,6 @@
 package com.mohammad.booking_service.controller;
 
-import com.mohammad.booking_service.dto.AddBookingRequest;
-import com.mohammad.booking_service.dto.CancelBookingRequest;
-import com.mohammad.booking_service.dto.GetMyBookingsResponse;
-import com.mohammad.booking_service.dto.PageResponse;
+import com.mohammad.booking_service.dto.*;
 import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.service.BookingService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,4 +54,18 @@ public class BookingController {
         return bookingService.cancelBooking(reference, reason, token);
     }
 
+    @GetMapping({"/{eventId}/sales", "/event/{eventId}/sales"})
+    public ResponseEntity<GetEventSales> getSalesByEvent(
+            @PathVariable String eventId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(required = false) Integer size,
+            HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        int limit = (pageSize != null) ? pageSize : (size != null ? size : 10);
+
+        GetEventSales sales = bookingService.getSalesByEvent(eventId, status, page, limit, token);
+        return ResponseEntity.ok(sales);
+    }
 }

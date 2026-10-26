@@ -32,4 +32,10 @@ public class UserController {
     public ResponseEntity<UserDetailsServiceStructure> findByUsername(Principal principal) {
         return userService.findByUsername(principal.getName());
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProfileResponse> getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
 }
+

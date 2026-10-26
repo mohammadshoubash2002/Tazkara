@@ -26,4 +26,23 @@ public class BookingSpecification {
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    public static Specification<Booking> buildEventSpecification(Integer eventId, String status) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (eventId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("eventId"), eventId));
+            }
+
+            if (status != null && !status.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.upper(root.get("status")),
+                        status.trim().toUpperCase()
+                ));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 }

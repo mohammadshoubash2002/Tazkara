@@ -32,4 +32,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
 
     @Query("SELECT b.id FROM Booking b WHERE b.status = 'PENDING_PAYMENT' AND b.expiresAt < :now")
     List<Long> findOverduePendingBookingIds(@Param("now") LocalDateTime now);
+
+    List<Booking> findByEventId(Integer eventId);
 }

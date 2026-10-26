@@ -5,6 +5,7 @@ import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.entity.BookingItem;
 import com.mohammad.booking_service.entity.BookingStatus;
 import com.mohammad.booking_service.exception.*;
+import com.mohammad.booking_service.repository.BookingItemRepository;
 import com.mohammad.booking_service.repository.BookingRepository;
 import com.mohammad.booking_service.repository.PaymentRepository;
 import jakarta.transaction.Transactional;
@@ -41,6 +42,9 @@ public class BookingService {
 
     @Autowired
     private BookingRepository bookingRepository;
+
+    @Autowired
+    private BookingItemRepository bookingItemRepository;
 
     @Autowired
     private PaymentRepository paymentRepository;
@@ -208,6 +212,38 @@ public class BookingService {
         Integer userId = (Integer) identityResponse.get("id");
         if (userId == null) {
             throw new NotAttendeeException("Unable to verify user identity");
+        }
+
+        return userId;
+    }
+
+    private Integer verifyOrganizerAndGetUserId(String token){
+        RestClient restClient = RestClient.create();
+
+        LinkedHashMap<?, ?> identityResponse;
+        try {
+            identityResponse = restClient
+                    .get()
+                    .uri(identityServiceUrl + "/api/users/my-profile/username")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .body(LinkedHashMap.class);
+        } catch (Exception ex) {
+            throw new NotOrganizerException("Unable to verify user role");
+        }
+
+        if (identityResponse == null || identityResponse.get("role") == null) {
+            throw new NotOrganizerException("Unable to verify user role");
+        }
+
+        String role = (String) identityResponse.get("role");
+        if (!role.toUpperCase().equals("ORGANIZER")) {
+            throw new NotOrganizerException("Only organizer can do this");
+        }
+
+        Integer userId = (Integer) identityResponse.get("id");
+        if (userId == null) {
+            throw new NotOrganizerException("Unable to verify user identity");
         }
 
         return userId;
@@ -428,4 +464,155 @@ public class BookingService {
         }
     }
 
+    private String getAttendeeEmail(Integer userId, String token, Map<Integer, String> userEmailCache) {
+        if (userId == null) return null;
+        if (userEmailCache.containsKey(userId)) {
+            return userEmailCache.get(userId);
+        }
+        try {
+            RestClient restClient = RestClient.create();
+            LinkedHashMap<?, ?> userResponse = restClient
+                    .get()
+                    .uri(identityServiceUrl + "/api/users/" + userId)
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .body(LinkedHashMap.class);
+            if (userResponse != null && userResponse.get("email") != null) {
+                String email = (String) userResponse.get("email");
+                userEmailCache.put(userId, email);
+                return email;
+            }
+        } catch (Exception ignored) {
+        }
+        userEmailCache.put(userId, null);
+        return null;
+    }
+
+    @Transactional
+    public GetEventSales getSalesByEvent(Integer eventId, String status, int page, int limit, String token) {
+        // 1. Event owner only (the Booking Service verifies ownership through the Event Service).
+        Integer userId = verifyOrganizerAndGetUserId(token);
+
+        RestClient restClient = RestClient.create();
+        LinkedHashMap<?, ?> eventResponse;
+        try {
+            eventResponse = restClient
+                    .get()
+                    .uri(eventServiceUrl + "/api/events/" + eventId)
+                    .retrieve()
+                    .body(LinkedHashMap.class);
+        } catch (Exception ex) {
+            throw new EventStatusException("Event not found");
+        }
+
+        if (eventResponse == null) {
+            throw new EventStatusException("Event not found");
+        }
+
+        Object organizerIdObj = eventResponse.get("organizerId");
+        if (organizerIdObj == null) {
+            organizerIdObj = eventResponse.get("userId");
+        }
+
+        if (organizerIdObj == null || !(organizerIdObj instanceof Number) || ((Number) organizerIdObj).intValue() != userId.intValue()) {
+            throw new NotOwnerException("You are not authorized to view this event sales.");
+        }
+
+        // 2. Summary per ticket type: total, sold (CONFIRMED), held (PENDING_PAYMENT), remaining, and revenue from CONFIRMED bookings.
+        List<Booking> allEventBookings = bookingRepository.findByEventId(eventId);
+
+        Map<String, Integer> soldMap = new HashMap<>();
+        Map<String, Integer> heldMap = new HashMap<>();
+        Map<String, Double> revenueMap = new HashMap<>();
+
+        for (Booking b : allEventBookings) {
+            boolean isConfirmed = "CONFIRMED".equalsIgnoreCase(b.getStatus());
+            boolean isPending = "PENDING_PAYMENT".equalsIgnoreCase(b.getStatus());
+
+            if (b.getItems() != null) {
+                for (BookingItem item : b.getItems()) {
+                    String typeName = item.getTicketTypeName();
+                    int qty = (item.getQuantity() != null) ? item.getQuantity() : 0;
+                    double price = (item.getPrice() != null) ? item.getPrice() : 0.0;
+
+                    if (isConfirmed) {
+                        soldMap.put(typeName, soldMap.getOrDefault(typeName, 0) + qty);
+                        revenueMap.put(typeName, revenueMap.getOrDefault(typeName, 0.0) + (qty * price));
+                    } else if (isPending) {
+                        heldMap.put(typeName, heldMap.getOrDefault(typeName, 0) + qty);
+                    }
+                }
+            }
+        }
+
+        List<TicketSummaryDto> ticketSummaries = new ArrayList<>();
+        Set<String> processedTypes = new HashSet<>();
+
+        List<?> ticketTypesList = (List<?>) eventResponse.get("ticketTypes");
+        if (ticketTypesList != null) {
+            for (Object obj : ticketTypesList) {
+                if (obj instanceof Map<?, ?> ttMap) {
+                    String name = (String) ttMap.get("name");
+                    int remaining = (ttMap.get("quantity") != null) ? ((Number) ttMap.get("quantity")).intValue() : 0;
+                    int sold = soldMap.getOrDefault(name, 0);
+                    int held = heldMap.getOrDefault(name, 0);
+                    int total = remaining + sold + held;
+                    double revenue = revenueMap.getOrDefault(name, 0.0);
+
+                    ticketSummaries.add(new TicketSummaryDto(name, total, sold, held, remaining, revenue));
+                    processedTypes.add(name);
+                }
+            }
+        }
+
+        Set<String> allBookedTypes = new HashSet<>();
+        allBookedTypes.addAll(soldMap.keySet());
+        allBookedTypes.addAll(heldMap.keySet());
+        for (String name : allBookedTypes) {
+            if (!processedTypes.contains(name)) {
+                int sold = soldMap.getOrDefault(name, 0);
+                int held = heldMap.getOrDefault(name, 0);
+                int total = sold + held;
+                double revenue = revenueMap.getOrDefault(name, 0.0);
+                ticketSummaries.add(new TicketSummaryDto(name, total, sold, held, 0, revenue));
+            }
+        }
+
+        // 3. Paginated bookings (filter by status) show reference, attendee email, tickets, status.
+        int pageNumber = (page > 0) ? page - 1 : 0;
+        int size = (limit > 0) ? limit : 10;
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"));
+        Pageable pageable = PageRequest.of(pageNumber, size, sort);
+
+        Specification<Booking> spec = BookingSpecification.buildEventSpecification(eventId, status);
+        Page<Booking> bookingPage = bookingRepository.findAll(spec, pageable);
+
+        Map<Integer, String> userEmailCache = new HashMap<>();
+        Page<BookingSalesItemDto> salesDtoPage = bookingPage.map(booking -> {
+            String attendeeEmail = getAttendeeEmail(booking.getUserId(), token, userEmailCache);
+            List<BookingItemDto> items = new ArrayList<>();
+            if (booking.getItems() != null) {
+                for (BookingItem item : booking.getItems()) {
+                    items.add(new BookingItemDto(item.getTicketTypeName(), item.getQuantity(), item.getPrice()));
+                }
+            }
+            return new BookingSalesItemDto(
+                    booking.getReference(),
+                    attendeeEmail,
+                    items,
+                    booking.getStatus()
+            );
+        });
+
+        PageResponse<BookingSalesItemDto> pageResponse = PageResponse.from(salesDtoPage);
+        return GetEventSales.of(ticketSummaries, pageResponse);
+    }
+
+    public GetEventSales getSalesByEvent(String eventId, String status, int page, int limit, String token) {
+        try {
+            return getSalesByEvent(Integer.parseInt(eventId), status, page, limit, token);
+        } catch (NumberFormatException e) {
+            throw new EventStatusException("Event not found");
+        }
+    }
 }
