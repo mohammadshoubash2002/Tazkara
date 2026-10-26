@@ -36,7 +36,7 @@ public class EventService {
     @Value("${identity.service.url:http://localhost:8081}")
     private String identityServiceUrl;
 
-    @Value("${booking.service.url:<http://localhost:8083>}")
+    @Value("${booking.service.url:http://localhost:8083}")
     private String bookingServiceUrl;
     
 
