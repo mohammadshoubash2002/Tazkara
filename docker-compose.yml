@@ -20,14 +20,32 @@ services:
         - identity-service
       environment:
         - IDENTITY_SERVICE_URL=http://identity-service:8081
+        - BOOKING_SERVICE_URL=http://booking-service:8083
       volumes:
         - event-service-data:/app/data
+      networks:
+        - default
+
+    booking-service:
+      build: ./booking-service
+      container_name: booking-service
+      ports:
+        - "8083:8083"
+      depends_on:
+        - identity-service
+        - event-service
+      environment:
+        - IDENTITY_SERVICE_URL=http://identity-service:8081
+        - EVENT_SERVICE_URL=http://event-service:8082
+      volumes:
+        - booking-service-data:/app/data
       networks:
         - default
 
 volumes: 
   identity-service-data:
   event-service-data:
+  booking-service-data:
 
 networks:
   default:
