@@ -4,11 +4,13 @@ import com.mohammad.booking_service.dto.PaymentRequest;
 import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.entity.BookingStatus;
 import com.mohammad.booking_service.entity.Payment;
+import com.mohammad.booking_service.event.BookingStatusChangedEvent;
 import com.mohammad.booking_service.exception.*;
 import com.mohammad.booking_service.repository.BookingRepository;
 import com.mohammad.booking_service.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,9 @@ public class PaymentService {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ResponseEntity<String> payForBooking(Integer booking_id, PaymentRequest paymentRequest, String token){
@@ -119,6 +124,15 @@ public class PaymentService {
         // 10. Update booking status
         booking.setStatus(BookingStatus.CONFIRMED.name());
         bookingRepository.save(booking);
+
+        // 11. Publish booking status changed event
+        String attendeeEmail = (String) identityResponse.get("email");
+        eventPublisher.publishEvent(new BookingStatusChangedEvent(
+                booking.getReference(),
+                attendeeEmail,
+                "CONFIRMED",
+                "Your payment was processed successfully."
+        ));
 
         return new ResponseEntity<>("Payment Done for booking: " + booking.getReference(), HttpStatus.OK);
     }

@@ -5,6 +5,7 @@ import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.entity.BookingItem;
 import com.mohammad.booking_service.entity.BookingStatus;
 import com.mohammad.booking_service.entity.Payment;
+import com.mohammad.booking_service.event.BookingStatusChangedEvent;
 import com.mohammad.booking_service.exception.*;
 import com.mohammad.booking_service.repository.BookingItemRepository;
 import com.mohammad.booking_service.repository.BookingRepository;
@@ -13,6 +14,7 @@ import jakarta.transaction.Transactional;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -55,6 +57,9 @@ public class BookingService {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String REFERENCE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -441,7 +446,25 @@ public class BookingService {
 
         bookingRepository.save(booking);
 
-        // 7. Tickets return to availability (Release tickets in event-service)
+        // 7. Publish booking status changed event
+        RestClient restClient = RestClient.create();
+
+        LinkedHashMap<?, ?> identityResponse =  restClient
+                .get()
+                .uri(identityServiceUrl + "/api/users/" + booking.getUserId())
+                .retrieve()
+                .body(LinkedHashMap.class);
+
+        String attendeeEmail = (String) identityResponse.get("email");
+
+        eventPublisher.publishEvent(new BookingStatusChangedEvent(
+                booking.getReference(),
+                attendeeEmail,
+                "CANCELLED",
+                "Reason: " + booking.getCancellationReason()
+        ));
+
+        // 8. Tickets return to availability (Release tickets in event-service)
         freeTickets(booking);
 
         return ResponseEntity.ok("Booking cancelled successfully");

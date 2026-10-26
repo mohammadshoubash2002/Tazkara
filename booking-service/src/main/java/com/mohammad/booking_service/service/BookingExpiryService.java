@@ -4,17 +4,20 @@ import com.mohammad.booking_service.dto.EventTicketTypeData;
 import com.mohammad.booking_service.entity.Booking;
 import com.mohammad.booking_service.entity.BookingItem;
 import com.mohammad.booking_service.entity.BookingStatus;
+import com.mohammad.booking_service.event.BookingStatusChangedEvent;
 import com.mohammad.booking_service.repository.BookingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
@@ -27,6 +30,12 @@ public class BookingExpiryService {
 
     @Autowired
     private BookingRepository bookingRepository;
+
+    @Value("${identity.service.url:http://localhost:8081}")
+    private String identityServiceUrl;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void expireBooking(Long bookingId) {
@@ -52,7 +61,25 @@ public class BookingExpiryService {
         booking.setStatus(BookingStatus.EXPIRED.name());
         bookingRepository.save(booking);
 
-        // 5. Free reserved tickets in event-service
+        // 5. Publish booking expired event
+        RestClient restClient = RestClient.create();
+
+        LinkedHashMap<?, ?> identityResponse =  restClient
+                .get()
+                .uri(identityServiceUrl + "/api/users/" + booking.getUserId())
+                .retrieve()
+                .body(LinkedHashMap.class);
+
+        String attendeeEmail = (String) identityResponse.get("email");
+
+        eventPublisher.publishEvent(new BookingStatusChangedEvent(
+                booking.getReference(),
+                attendeeEmail,
+                "EXPIRED",
+                "The 10-minute hold window for payment elapsed."
+        ));
+
+        // 6. Free reserved tickets in event-service
         freeTickets(booking);
         log.info("Successfully expired overdue booking [id={}, ref={}] and freed tickets.", booking.getId(), booking.getReference());
     }
