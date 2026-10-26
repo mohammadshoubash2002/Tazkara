@@ -89,4 +89,10 @@ public class BookingController {
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(csvData);
     }
+
+    @PatchMapping("/event/{eventId}/cancel")
+    public ResponseEntity<String> cancelBookingsForEvent(@PathVariable Integer eventId, HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        return bookingService.cancelBookingsForEvent(eventId, token);
+    }
 }

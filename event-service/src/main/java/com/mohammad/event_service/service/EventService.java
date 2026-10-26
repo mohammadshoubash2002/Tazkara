@@ -10,6 +10,7 @@ import com.mohammad.event_service.repository.EventRepository;
 import com.mohammad.event_service.repository.TicketTypeRepository;
 import com.mohammad.event_service.specification.EventSpecification;
 import com.mohammad.event_service.specification.MyEventsSpecification;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
@@ -34,6 +35,9 @@ public class EventService {
 
     @Value("${identity.service.url:http://localhost:8081}")
     private String identityServiceUrl;
+
+    @Value("${booking.service.url:<http://localhost:8083>}")
+    private String bookingServiceUrl;
     
 
     public ResponseEntity<CreateEventResponse> createEvent(CreateEventRequest eventRequest, String token) {
@@ -295,5 +299,52 @@ public class EventService {
                 event.getOrganizerId(),
                 event.getTicketTypes()
         ), HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity<String> cancelEvent(Long event_id, String token) {
+        // 1. Fetch Event
+        Event event = eventRepository.findById(event_id)
+                .orElseThrow(() -> new EventNotFoundException("Event not found"));
+
+        // 2. Authenticate user from identity-service
+        RestClient restClient = RestClient.create();
+
+        LinkedHashMap<?, ?> response = restClient
+                .get()
+                .uri(identityServiceUrl + "/api/users/my-profile/username")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .body(LinkedHashMap.class);
+
+        Integer userId = (Integer) response.get("id");
+
+        // 3. Acceptance Criterion: Owner only
+        if (!event.getOrganizerId().equals(userId)) {
+            throw new NotOrganizerException("You are not authorized to cancel this event");
+        }
+
+        // 4. Acceptance Criterion: PUBLISHED only
+        if (!EventStatus.PUBLISHED.name().equalsIgnoreCase(event.getStatus())) {
+            throw new InvalidEventStatusException("Only published events can be cancelled");
+        }
+
+        // 5. Update event status to CANCELLED
+        // Automatically makes it not bookable & not publicly visible (EventSpecification filters PUBLISHED only)
+        event.setStatus(EventStatus.CANCELLED.name());
+        eventRepository.save(event);
+
+        // 6. Notify booking-service to cancel active bookings & refund attendees
+        try {
+            restClient.patch()
+                    .uri(bookingServiceUrl + "/api/bookings/event/" + event_id + "/cancel")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to cancel bookings in booking-service: " + e.getMessage(), e);
+        }
+
+        return ResponseEntity.ok("Event cancelled successfully and attendee bookings have been processed");
     }
 }

@@ -732,4 +732,42 @@ public class BookingService {
         }
         return str;
     }
+
+    @Transactional
+    public ResponseEntity<String> cancelBookingsForEvent(Integer eventId, String token) {
+        List<Booking> activeBookings = bookingRepository.findActiveBookingsByEventId(eventId);
+        Map<Integer, String> userEmailCache = new HashMap<>();
+
+        for (Booking booking : activeBookings) {
+            boolean wasConfirmed = BookingStatus.CONFIRMED.name().equalsIgnoreCase(booking.getStatus());
+
+            // Acceptance Criteria:
+            // 1. All PENDING_PAYMENT and CONFIRMED become CANCELLED with reason EVENT_CANCELLED
+            booking.setStatus(BookingStatus.CANCELLED.name());
+            booking.setCancellationReason("EVENT_CANCELLED");
+
+            if (wasConfirmed) {
+                // 2. Confirmed ones record a full refund
+                double fullRefund = (booking.getTotalAmount() != null) ? booking.getTotalAmount() : 0.0;
+                booking.setRefund(fullRefund);
+
+                // 3. Trigger notification for confirmed bookings
+                String attendeeEmail = getAttendeeEmail(booking.getUserId(), token, userEmailCache);
+                eventPublisher.publishEvent(new BookingStatusChangedEvent(
+                        booking.getReference(),
+                        attendeeEmail,
+                        "CANCELLED",
+                        "Reason: EVENT_CANCELLED - The event has been cancelled by the organizer. A full refund of $"
+                                + fullRefund + " has been recorded."
+                ));
+            } else {
+                // PENDING_PAYMENT had no money paid
+                booking.setRefund(0.0);
+            }
+
+            bookingRepository.save(booking);
+        }
+
+        return ResponseEntity.ok("All active bookings for event " + eventId + " were cancelled and refunds recorded.");
+    }
 }

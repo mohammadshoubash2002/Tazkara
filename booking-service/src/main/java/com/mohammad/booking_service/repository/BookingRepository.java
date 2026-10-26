@@ -36,4 +36,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     List<Booking> findByEventId(Integer eventId);
 
     List<Booking> findByEventIdAndStatus(Integer eventId, String status);
+
+    @Query("SELECT b FROM Booking b WHERE b.eventId = :eventId AND b.status IN ('PENDING_PAYMENT', 'CONFIRMED')")
+    List<Booking> findActiveBookingsByEventId(@Param("eventId") Integer eventId);
 }

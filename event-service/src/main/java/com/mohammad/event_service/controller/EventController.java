@@ -68,4 +68,10 @@ public class EventController {
 //        String token = request.getHeader("Authorization").substring(7);
         return eventService.getEvent(event_id);
     }
+
+    @PatchMapping("/{event_id}/cancel")
+    public ResponseEntity<String> cancelEvent(@PathVariable Long event_id, HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        return eventService.cancelEvent(event_id, token);
+    }
 }
