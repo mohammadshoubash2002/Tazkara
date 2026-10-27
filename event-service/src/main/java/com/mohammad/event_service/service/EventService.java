@@ -224,7 +224,7 @@ public class EventService {
         return new ResponseEntity<>("Event published successfully", HttpStatus.OK);
     }
 
-    public Page<Event> getAllEvents(String city, LocalDate from, LocalDate to, String keyword, Integer page, Integer pageSize){
+    public Page<EventResponse> getAllEvents(String city, LocalDate from, LocalDate to, String keyword, Integer page, Integer pageSize){
         Specification<Event> spec = EventSpecification.buildSpecification(city, from, to, keyword);
 
         Sort sortObj = Sort.by(Sort.Direction.ASC, "dateTime");
@@ -234,7 +234,7 @@ public class EventService {
 
         Pageable pageable = PageRequest.of(pageNumber, size, sortObj);
 
-        return eventRepository.findAll(spec, pageable);
+        return eventRepository.findAll(spec, pageable).map(EventResponse::from);
     }
 
     public ResponseEntity<String> getEventDetailsById(Long event_id){
@@ -255,7 +255,7 @@ public class EventService {
         return new ResponseEntity<>(event.getDescription(), HttpStatus.OK);
     }
 
-    public Page<Event> getMyEvents(String token, String status, Integer page, Integer pageSize){
+    public Page<EventResponse> getMyEvents(String token, String status, Integer page, Integer pageSize){
         RestClient restClient = RestClient.create();
 
         LinkedHashMap<String, Object> response = restClient
@@ -272,7 +272,8 @@ public class EventService {
             throw new EventNotFoundException("User is not organizer");
         }
 
-        Specification<Event> spec = MyEventsSpecification.buildSpecification(status.toUpperCase(), userId);
+        String normalizedStatus = status != null ? status.toUpperCase() : null;
+        Specification<Event> spec = MyEventsSpecification.buildSpecification(normalizedStatus, userId);
 
         Sort sortObj = Sort.by(Sort.Direction.ASC, "dateTime");
 
@@ -281,7 +282,7 @@ public class EventService {
 
         Pageable pageable = PageRequest.of(pageNumber, size, sortObj);
 
-        return eventRepository.findAll(spec, pageable);
+        return eventRepository.findAll(spec, pageable).map(EventResponse::from);
     }
 
     public ResponseEntity<GetEventResponse> getEvent(Long event_id){

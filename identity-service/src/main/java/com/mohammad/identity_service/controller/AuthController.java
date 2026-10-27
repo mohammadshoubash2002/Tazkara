@@ -3,7 +3,7 @@ package com.mohammad.identity_service.controller;
 import com.mohammad.identity_service.dto.LoginRequest;
 import com.mohammad.identity_service.dto.LoginResponse;
 import com.mohammad.identity_service.dto.RegisterRequest;
-import com.mohammad.identity_service.entity.AppUser;
+import com.mohammad.identity_service.dto.RegisterResponse;
 import com.mohammad.identity_service.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Optional;
-
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -21,7 +19,7 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<Optional<AppUser>> register(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest registerRequest) {
         return userService.register(registerRequest);
     }
 

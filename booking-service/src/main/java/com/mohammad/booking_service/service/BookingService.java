@@ -66,7 +66,7 @@ public class BookingService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String REFERENCE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
-    public ResponseEntity<Booking> addBooking(Integer eventId, AddBookingRequest addBookingRequest, String token) {
+    public ResponseEntity<BookingResponse> addBooking(Integer eventId, AddBookingRequest addBookingRequest, String token) {
         RestClient restClient = RestClient.create();
 
         // 1. Authenticate & verify role (Organizers cannot book)
@@ -186,7 +186,7 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        return new ResponseEntity<>(savedBooking, HttpStatus.OK);
+        return new ResponseEntity<>(BookingResponse.from(savedBooking), HttpStatus.CREATED);
     }
 
     private String generateUniqueReference() {

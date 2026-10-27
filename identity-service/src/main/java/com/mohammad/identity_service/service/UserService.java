@@ -19,7 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -35,7 +34,7 @@ public class UserService {
     @Autowired
     private PasswordEncoder encoder;
 
-    public ResponseEntity<Optional<AppUser>> register(RegisterRequest registerRequest) {
+    public ResponseEntity<RegisterResponse> register(RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.email())) {
             throw new DuplicateEmailException("Email already in use: " + registerRequest.email());
         }
@@ -71,7 +70,7 @@ public class UserService {
 
         userRepository.save(user);
 
-        return new ResponseEntity<>(Optional.of(user), HttpStatus.CREATED);
+        return new ResponseEntity<>(RegisterResponse.from(user), HttpStatus.CREATED);
     }
 
     public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {

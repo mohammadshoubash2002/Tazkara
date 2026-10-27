@@ -1,7 +1,6 @@
 package com.mohammad.event_service.controller;
 
 import com.mohammad.event_service.dto.*;
-import com.mohammad.event_service.entity.Event;
 import com.mohammad.event_service.service.EventService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +18,13 @@ public class EventController {
     private EventService eventService;
 
     @GetMapping
-    public PageResponse<Event> getAllEvents(@RequestParam(required = false) String city,
+    public PageResponse<EventResponse> getAllEvents(@RequestParam(required = false) String city,
                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
                                 @RequestParam(required = false) String keyword,
                                 @RequestParam(required = false, defaultValue = "1") Integer page,
                                 @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
-        Page<Event> eventPage = eventService.getAllEvents(city, dateFrom, dateTo, keyword, page, pageSize);
+        Page<EventResponse> eventPage = eventService.getAllEvents(city, dateFrom, dateTo, keyword, page, pageSize);
         return PageResponse.from(eventPage);
     }
 
@@ -53,12 +52,12 @@ public class EventController {
     }
 
     @GetMapping("/my-events")
-    public PageResponse<Event> getMyEvents(@RequestParam(required = false) String status,
+    public PageResponse<EventResponse> getMyEvents(@RequestParam(required = false) String status,
                                            @RequestParam(required = false, defaultValue = "1") Integer page,
                                            @RequestParam(required = false, defaultValue = "10") Integer pageSize,
                                            HttpServletRequest request) {
         String token = request.getHeader("Authorization").substring(7);
-        Page<Event> eventPage = eventService.getMyEvents(token, status, page, pageSize);
+        Page<EventResponse> eventPage = eventService.getMyEvents(token, status, page, pageSize);
 
         return PageResponse.from(eventPage);
     }
