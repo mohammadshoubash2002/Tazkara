@@ -5,6 +5,7 @@ import com.mohammad.identity_service.dto.ProfileResponse;
 import com.mohammad.identity_service.dto.UserDetailsServiceStructure;
 import com.mohammad.identity_service.entity.AppUser;
 import com.mohammad.identity_service.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class UserController {
     }
 
     @PutMapping("/my-profile")
-    public ResponseEntity<ProfileResponse> updateMyProfile(Principal principal, @RequestBody ProfileEditRequest profileEditRequest) {
+    public ResponseEntity<ProfileResponse> updateMyProfile(Principal principal, @Valid @RequestBody ProfileEditRequest profileEditRequest) {
         return userService.updateMyProfile(principal, profileEditRequest);
     }
 

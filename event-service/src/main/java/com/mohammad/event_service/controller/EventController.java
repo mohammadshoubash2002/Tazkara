@@ -3,6 +3,7 @@ package com.mohammad.event_service.controller;
 import com.mohammad.event_service.dto.*;
 import com.mohammad.event_service.service.EventService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -34,13 +35,13 @@ public class EventController {
     }
 
     @PostMapping
-    public ResponseEntity<CreateEventResponse> createEvent(@RequestBody CreateEventRequest event, HttpServletRequest request) {
+    public ResponseEntity<CreateEventResponse> createEvent(@Valid @RequestBody CreateEventRequest event, HttpServletRequest request) {
         String token = request.getHeader("Authorization").substring(7);
         return eventService.createEvent(event, token);
     }
 
     @PutMapping("/{event_id}")
-    public ResponseEntity<EditEventResponse> updateEvent(@PathVariable Long event_id, @RequestBody EditEventRequest event, HttpServletRequest request) {
+    public ResponseEntity<EditEventResponse> updateEvent(@PathVariable Long event_id, @Valid @RequestBody EditEventRequest event, HttpServletRequest request) {
         String token = request.getHeader("Authorization").substring(7);
         return eventService.updateEvent(event_id, event, token);
     }

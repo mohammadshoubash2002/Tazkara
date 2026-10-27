@@ -149,8 +149,8 @@ public class BookingService {
                     .retrieve()
                     .body(ReservedTicketsResponse.class);
         } catch (HttpClientErrorException ex) {
-            String errorMsg = ex.getResponseBodyAsString().replace("\"", "");
-            throw new TicketIsNotAvailableException(errorMsg.isEmpty() ? "Tickets are not available" : errorMsg);
+            String errorMsg = "Tickets are not available";
+            throw new TicketIsNotAvailableException(ex.getMessage().isEmpty() ? errorMsg : ex.getMessage());
         }
 
         if (reservedResponse == null || reservedResponse.items() == null || reservedResponse.items().isEmpty()) {

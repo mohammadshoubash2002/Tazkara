@@ -3,6 +3,7 @@ package com.mohammad.booking_service.controller;
 import com.mohammad.booking_service.dto.*;
 import com.mohammad.booking_service.service.BookingService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,7 +21,7 @@ public class BookingController {
     private BookingService bookingService;
 
     @PostMapping("/event/{event_id}")
-    public ResponseEntity<BookingResponse> createBooking(@PathVariable Integer event_id, @RequestBody AddBookingRequest addBookingRequest, HttpServletRequest request) {
+    public ResponseEntity<BookingResponse> createBooking(@PathVariable Integer event_id, @Valid @RequestBody AddBookingRequest addBookingRequest, HttpServletRequest request) {
         String token = request.getHeader("Authorization").substring(7);
         return bookingService.addBooking(event_id, addBookingRequest, token);
     }
@@ -50,7 +51,7 @@ public class BookingController {
     @PatchMapping("/{reference}/cancel")
     public ResponseEntity<String> cancelBooking (
             @PathVariable String reference,
-            @RequestBody(required = false) CancelBookingRequest cancelRequest,
+            @jakarta.validation.Valid @RequestBody(required = false) CancelBookingRequest cancelRequest,
             HttpServletRequest request) throws BadRequestException {
         String token = request.getHeader("Authorization").substring(7);
         String reason = (cancelRequest != null) ? cancelRequest.reason() : null;

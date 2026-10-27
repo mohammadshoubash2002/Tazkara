@@ -2,6 +2,7 @@ package com.mohammad.booking_service.repository;
 
 import com.mohammad.booking_service.entity.Booking;
 import jakarta.persistence.LockModeType;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
