@@ -1,8 +1,10 @@
 package com.mohammad.event_service.dto;
 
+import java.math.BigDecimal;
+
 public record TicketTypeRequest(
         String name,
-        Double price,
+        BigDecimal price,
         Integer quantity
 ) {
 }

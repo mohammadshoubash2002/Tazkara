@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,7 +32,7 @@ public class DataInitializer implements CommandLineRunner {
         if (!eventRepository.existsByTitle(demoTitle)) {
             TicketType standardTicket = new TicketType(
                     "Standard",
-                    50.0,
+                    new BigDecimal("50.00"),
                     100,
                     TicketTypeStatus.AVAILABLE.name(),
                     null
@@ -39,7 +40,7 @@ public class DataInitializer implements CommandLineRunner {
 
             TicketType vipTicket = new TicketType(
                     "VIP",
-                    150.0,
+                    new BigDecimal("150.00"),
                     30,
                     TicketTypeStatus.AVAILABLE.name(),
                     null
@@ -62,7 +63,7 @@ public class DataInitializer implements CommandLineRunner {
             vipTicket.setEvent(event);
 
             eventRepository.save(event);
-            log.info("Demo Published Event initialized: '{}' with 2 ticket types (Standard Pass, VIP Pass)", demoTitle);
+            log.info("Demo Published Event initialized: '{}' with 2 ticket types (Standard, VIP)", demoTitle);
         }
     }
 }

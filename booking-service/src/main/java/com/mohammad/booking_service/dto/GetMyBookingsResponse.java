@@ -1,5 +1,6 @@
 package com.mohammad.booking_service.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -8,11 +9,11 @@ public record GetMyBookingsResponse(
         EventSummaryDto event,
         List<BookingItemDto> ticketTypes,
         Integer ticketsCount,
-        Double total,
+        BigDecimal total,
         String status,
         LocalDateTime holdExpiry,
         String cancellationReason,
-        Double refund,
+        BigDecimal refund,
         LocalDateTime createdAt
 ) {
 }

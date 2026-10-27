@@ -3,6 +3,8 @@ package com.mohammad.booking_service.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "booking_items")
 public class BookingItem {
@@ -14,7 +16,8 @@ public class BookingItem {
 
     private Integer quantity;
 
-    private Double price;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id")
@@ -24,7 +27,7 @@ public class BookingItem {
     public BookingItem() {
     }
 
-    public BookingItem(String ticketTypeName, Integer quantity, Double price, Booking booking) {
+    public BookingItem(String ticketTypeName, Integer quantity, BigDecimal price, Booking booking) {
         this.ticketTypeName = ticketTypeName;
         this.quantity = quantity;
         this.price = price;
@@ -51,11 +54,11 @@ public class BookingItem {
         this.quantity = quantity;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

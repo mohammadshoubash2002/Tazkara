@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(
         name = "ticket_types",
@@ -21,7 +23,8 @@ public class TicketType {
 
     private String name;
 
-    private Double price;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
 
     @Min(0)
     @Max(10000)
@@ -38,7 +41,7 @@ public class TicketType {
 
     }
 
-    public TicketType(String name, Double price, Integer quantity, String status, Event event){
+    public TicketType(String name, BigDecimal price, Integer quantity, String status, Event event){
         this.name = name;
         this.price = price;
         this.quantity = quantity;
@@ -55,11 +58,11 @@ public class TicketType {
         this.name = name;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 
@@ -99,7 +102,7 @@ public class TicketType {
 
     public static class Builder {
         private String name;
-        private Double price;
+        private BigDecimal price;
         private Integer quantity;
         private String status;
         private Event event;
@@ -109,7 +112,7 @@ public class TicketType {
             return this;
         }
 
-        public Builder price(Double price){
+        public Builder price(BigDecimal price){
             this.price = price;
             return this;
         }

@@ -11,6 +11,8 @@ import com.mohammad.booking_service.repository.BookingItemRepository;
 import com.mohammad.booking_service.repository.BookingRepository;
 import com.mohammad.booking_service.repository.PaymentRepository;
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -156,15 +158,17 @@ public class BookingService {
         }
 
         // 6. Calculate total price and record price snapshot
-        double totalAmount = 0.0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
         List<BookingItem> bookingItems = new ArrayList<>();
         for (ReservedTicketItemDto itemDto : reservedResponse.items()) {
-            totalAmount += itemDto.unitPrice() * itemDto.quantity();
-            bookingItems.add(new BookingItem(itemDto.ticketTypeName(), itemDto.quantity(), itemDto.unitPrice(), null));
+            BigDecimal unitPrice = itemDto.unitPrice() != null ? itemDto.unitPrice() : BigDecimal.ZERO;
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(itemDto.quantity()));
+            totalAmount = totalAmount.add(lineTotal);
+            bookingItems.add(new BookingItem(itemDto.ticketTypeName(), itemDto.quantity(), unitPrice, null));
         }
 
         // 7. Result: PENDING_PAYMENT or CONFIRMED (for free bookings), reference, hold expiry
-        BookingStatus status = (totalAmount == 0.0) ? BookingStatus.CONFIRMED : BookingStatus.PENDING_PAYMENT;
+        BookingStatus status = (totalAmount.compareTo(BigDecimal.ZERO) == 0) ? BookingStatus.CONFIRMED : BookingStatus.PENDING_PAYMENT;
         LocalDateTime expiresAt = (status == BookingStatus.CONFIRMED) ? null : LocalDateTime.now().plusMinutes(holdExpiryMinutes);
         String reference = generateUniqueReference();
 
@@ -391,7 +395,7 @@ public class BookingService {
             throw new BadRequestException("Booking has expired and cannot be cancelled");
         }
 
-        double refundAmount = 0.0;
+        BigDecimal refundAmount = BigDecimal.ZERO;
 
         // 5. Handle CONFIRMED vs PENDING_PAYMENT
         if (BookingStatus.CONFIRMED.name().equalsIgnoreCase(booking.getStatus())) {
@@ -426,13 +430,14 @@ public class BookingService {
             if (hours < 48) {
                 throw new BadRequestException("Cancellation is not allowed under 48 hours before the event starts");
             } else if (hours >= 168) { // 7+ days (7 * 24 = 168 hours)
-                refundAmount = booking.getTotalAmount() != null ? booking.getTotalAmount() : 0.0;
+                refundAmount = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
             } else { // 48 hours to 7 days: 50%
-                refundAmount = (booking.getTotalAmount() != null ? booking.getTotalAmount() : 0.0) * 0.5;
+                BigDecimal total = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
+                refundAmount = total.multiply(new BigDecimal("0.5")).setScale(2, RoundingMode.HALF_UP);
             }
         } else if (BookingStatus.PENDING_PAYMENT.name().equalsIgnoreCase(booking.getStatus())) {
             // PENDING_PAYMENT can be cancelled any time, no refund
-            refundAmount = 0.0;
+            refundAmount = BigDecimal.ZERO;
         } else {
             throw new BadRequestException("Booking status " + booking.getStatus() + " cannot be cancelled");
         }
@@ -553,7 +558,7 @@ public class BookingService {
 
         Map<String, Integer> soldMap = new HashMap<>();
         Map<String, Integer> heldMap = new HashMap<>();
-        Map<String, Double> revenueMap = new HashMap<>();
+        Map<String, BigDecimal> revenueMap = new HashMap<>();
 
         for (Booking b : allEventBookings) {
             boolean isConfirmed = "CONFIRMED".equalsIgnoreCase(b.getStatus());
@@ -563,11 +568,12 @@ public class BookingService {
                 for (BookingItem item : b.getItems()) {
                     String typeName = item.getTicketTypeName();
                     int qty = (item.getQuantity() != null) ? item.getQuantity() : 0;
-                    double price = (item.getPrice() != null) ? item.getPrice() : 0.0;
+                    BigDecimal price = (item.getPrice() != null) ? item.getPrice() : BigDecimal.ZERO;
 
                     if (isConfirmed) {
                         soldMap.put(typeName, soldMap.getOrDefault(typeName, 0) + qty);
-                        revenueMap.put(typeName, revenueMap.getOrDefault(typeName, 0.0) + (qty * price));
+                        BigDecimal lineRevenue = price.multiply(BigDecimal.valueOf(qty));
+                        revenueMap.put(typeName, revenueMap.getOrDefault(typeName, BigDecimal.ZERO).add(lineRevenue));
                     } else if (isPending) {
                         heldMap.put(typeName, heldMap.getOrDefault(typeName, 0) + qty);
                     }
@@ -587,7 +593,7 @@ public class BookingService {
                     int sold = soldMap.getOrDefault(name, 0);
                     int held = heldMap.getOrDefault(name, 0);
                     int total = remaining + sold + held;
-                    double revenue = revenueMap.getOrDefault(name, 0.0);
+                    BigDecimal revenue = revenueMap.getOrDefault(name, BigDecimal.ZERO);
 
                     ticketSummaries.add(new TicketSummaryDto(name, total, sold, held, remaining, revenue));
                     processedTypes.add(name);
@@ -603,7 +609,7 @@ public class BookingService {
                 int sold = soldMap.getOrDefault(name, 0);
                 int held = heldMap.getOrDefault(name, 0);
                 int total = sold + held;
-                double revenue = revenueMap.getOrDefault(name, 0.0);
+                BigDecimal revenue = revenueMap.getOrDefault(name, BigDecimal.ZERO);
                 ticketSummaries.add(new TicketSummaryDto(name, total, sold, held, 0, revenue));
             }
         }
@@ -700,8 +706,8 @@ public class BookingService {
                 if (booking.getItems() != null) {
                     for (BookingItem item : booking.getItems()) {
                         int quantity = item.getQuantity() != null ? item.getQuantity() : 0;
-                        double unitPrice = item.getPrice() != null ? item.getPrice() : 0.0;
-                        double lineTotal = quantity * unitPrice;
+                        BigDecimal unitPrice = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
+                        BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
 
                         writer.printf("%s,%s,%s,%d,%.2f,%.2f,%s%n",
                                 escapeCsv(booking.getReference()),
@@ -748,7 +754,7 @@ public class BookingService {
 
             if (wasConfirmed) {
                 // 2. Confirmed ones record a full refund
-                double fullRefund = (booking.getTotalAmount() != null) ? booking.getTotalAmount() : 0.0;
+                BigDecimal fullRefund = (booking.getTotalAmount() != null) ? booking.getTotalAmount() : BigDecimal.ZERO;
                 booking.setRefund(fullRefund);
 
                 // 3. Trigger notification for confirmed bookings
@@ -762,7 +768,7 @@ public class BookingService {
                 ));
             } else {
                 // PENDING_PAYMENT had no money paid
-                booking.setRefund(0.0);
+                booking.setRefund(BigDecimal.ZERO);
             }
 
             bookingRepository.save(booking);

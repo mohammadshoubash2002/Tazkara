@@ -2,6 +2,7 @@ package com.mohammad.booking_service.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,8 @@ public class Booking {
 
     private Integer ticketsCount;
 
-    private Double totalAmount;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal totalAmount;
 
     @Column(nullable = false)
     private String status;
@@ -34,8 +36,8 @@ public class Booking {
     @Column(nullable = true)
     private String cancellationReason;
 
-    @Column(nullable = true)
-    private Double refund;
+    @Column(nullable = true, precision = 10, scale = 2)
+    private BigDecimal refund;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookingItem> items = new ArrayList<>();
@@ -43,7 +45,7 @@ public class Booking {
     public Booking() {
     }
 
-    public Booking(String reference, Integer userId, Integer eventId, Integer ticketsCount, Double totalAmount, String status, LocalDateTime expiresAt, LocalDateTime createdAt, String cancellationReason, Double refund, List<BookingItem> items) {
+    public Booking(String reference, Integer userId, Integer eventId, Integer ticketsCount, BigDecimal totalAmount, String status, LocalDateTime expiresAt, LocalDateTime createdAt, String cancellationReason, BigDecimal refund, List<BookingItem> items) {
         this.reference = reference;
         this.userId = userId;
         this.eventId = eventId;
@@ -103,11 +105,11 @@ public class Booking {
         this.ticketsCount = ticketsCount;
     }
 
-    public Double getTotalAmount() {
+    public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
-    public void setTotalAmount(Double totalAmount) {
+    public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
     }
 
@@ -143,11 +145,11 @@ public class Booking {
         this.cancellationReason = cancellationReason;
     }
 
-    public Double getRefund() {
+    public BigDecimal getRefund() {
         return refund;
     }
 
-    public void setRefund(Double refund) {
+    public void setRefund(BigDecimal refund) {
         this.refund = refund;
     }
 
@@ -164,12 +166,12 @@ public class Booking {
         private Integer userId;
         private Integer eventId;
         private Integer ticketsCount;
-        private Double totalAmount;
+        private BigDecimal totalAmount;
         private String status;
         private LocalDateTime expiresAt;
         private LocalDateTime createdAt;
         private String cancellationReason;
-        private Double refund;
+        private BigDecimal refund;
         private List<BookingItem> items = new ArrayList<>();
 
         public Builder reference(String reference) {
@@ -192,7 +194,7 @@ public class Booking {
             return this;
         }
 
-        public Builder totalAmount(Double totalAmount) {
+        public Builder totalAmount(BigDecimal totalAmount) {
             this.totalAmount = totalAmount;
             return this;
         }
@@ -217,7 +219,7 @@ public class Booking {
             return this;
         }
 
-        public Builder refund(Double refund) {
+        public Builder refund(BigDecimal refund) {
             this.refund = refund;
             return this;
         }
