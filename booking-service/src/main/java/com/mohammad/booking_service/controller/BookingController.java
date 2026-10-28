@@ -95,4 +95,20 @@ public class BookingController {
         String token = request.getHeader("Authorization").substring(7);
         return bookingService.cancelBookingsForEvent(eventId, token);
     }
+
+    @GetMapping({"/{reference}/ticket", "/{reference}/pdf"})
+    public ResponseEntity<byte[]> downloadTicketPdf(
+            @PathVariable String reference,
+            HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+
+        byte[] pdfData = bookingService.generateTicketPdf(reference, token);
+
+        String filename = String.format("ticket-%s.pdf", reference);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfData);
+    }
 }

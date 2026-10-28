@@ -10,6 +10,7 @@ import com.mohammad.booking_service.exception.*;
 import com.mohammad.booking_service.repository.BookingItemRepository;
 import com.mohammad.booking_service.repository.BookingRepository;
 import com.mohammad.booking_service.repository.PaymentRepository;
+import com.mohammad.booking_service.util.TicketPdfGenerator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -780,5 +781,59 @@ public class BookingService {
         }
 
         return ResponseEntity.ok("All active bookings for event " + eventId + " were cancelled and refunds recorded.");
+    }
+
+    public byte[] generateTicketPdf(String reference, String token) {
+        // 1. Verify user authentication
+        Integer userId = verifyAttendeeAndGetUserId(token);
+
+        // 2. Find booking
+        Booking booking = bookingRepository.findByReference(reference)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
+
+        // 3. Verify owner
+        if (!booking.getUserId().equals(userId)) {
+            throw new NotOwnerException("You are not authorized to view or print this ticket");
+        }
+
+        // 4. Verify booking is CONFIRMED
+        if (!BookingStatus.CONFIRMED.name().equalsIgnoreCase(booking.getStatus())) {
+            throw new GeneralBadRequestException("Tickets can only be printed for CONFIRMED bookings. Current status: " + booking.getStatus());
+        }
+
+        // 5. Fetch Event Details from event-service
+        EventSummaryDto eventDto = fetchEventSummary(booking.getEventId());
+
+        // 6. Fetch Attendee Email from identity-service
+        String attendeeEmail = getAttendeeEmail(booking.getUserId(), token, new HashMap<>());
+
+        // 7. Generate PDF
+        return TicketPdfGenerator.generateTicketPdf(booking, eventDto, attendeeEmail);
+    }
+
+    private EventSummaryDto fetchEventSummary(Integer eventId) {
+        if (eventId == null) return null;
+        try {
+            RestClient restClient = RestClient.create();
+            LinkedHashMap<?, ?> eventResponse = restClient
+                    .get()
+                    .uri(eventServiceUrl + "/api/events/" + eventId)
+                    .retrieve()
+                    .body(LinkedHashMap.class);
+
+            if (eventResponse != null) {
+                String title = (String) eventResponse.get("title");
+                String description = (String) eventResponse.get("description");
+                String venue = (String) eventResponse.get("venue");
+                String city = (String) eventResponse.get("city");
+                String dateTimeStr = (String) eventResponse.get("dateTime");
+                LocalDateTime dateTime = dateTimeStr != null ? LocalDateTime.parse(dateTimeStr) : null;
+                String status = (String) eventResponse.get("status");
+
+                return new EventSummaryDto(eventId, title, description, venue, city, dateTime, status);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 }
