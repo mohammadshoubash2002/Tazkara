@@ -6,8 +6,10 @@ import com.mohammad.booking_service.entity.BookingStatus;
 import com.mohammad.booking_service.entity.Payment;
 import com.mohammad.booking_service.event.BookingStatusChangedEvent;
 import com.mohammad.booking_service.exception.*;
+import com.mohammad.booking_service.factory.PaymentStrategyFactory;
 import com.mohammad.booking_service.repository.BookingRepository;
 import com.mohammad.booking_service.repository.PaymentRepository;
+import com.mohammad.booking_service.strategy.PaymentStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,6 +38,9 @@ public class PaymentService {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private PaymentStrategyFactory paymentStrategyFactory;
 
     @Transactional
     public ResponseEntity<String> payForBooking(Integer booking_id, PaymentRequest paymentRequest, String token){
@@ -111,12 +116,9 @@ public class PaymentService {
         }
 
         // 8. New payment
-        Payment payment = new Payment.Builder()
-                .paymentMethod(paymentRequest.paymentMethod())
-                .paymentTime(LocalDateTime.now())
-                .booking(booking)
-                .userId(booking.getUserId())
-                .build();
+        PaymentStrategy strategy = paymentStrategyFactory.getStrategy(paymentRequest.paymentMethod());
+        Payment payment = strategy.processPayment(booking, paymentRequest);
+        paymentRepository.save(payment);
 
         // 9. Save payment
         paymentRepository.save(payment);
