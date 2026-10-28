@@ -374,7 +374,7 @@ public class BookingService {
     }
 
     @Transactional
-    public ResponseEntity<String> cancelBooking(String reference, String cancellationReason, String token) throws BadRequestException {
+    public ResponseEntity<String> cancelBooking(String reference, String cancellationReason, String token) {
         // 1. Authenticate & ensure user has ATTENDEE role
         Integer userId = verifyAttendeeAndGetUserId(token);
 
@@ -389,10 +389,10 @@ public class BookingService {
 
         // 4. EXPIRED or CANCELLED bookings cannot be cancelled again
         if (BookingStatus.CANCELLED.name().equalsIgnoreCase(booking.getStatus())) {
-            throw new BadRequestException("Booking is already cancelled");
+            throw new GeneralBadRequestException("Booking is already cancelled");
         }
         if (BookingStatus.EXPIRED.name().equalsIgnoreCase(booking.getStatus())) {
-            throw new BadRequestException("Booking has expired and cannot be cancelled");
+            throw new BookingExpiredException("Booking has expired and cannot be cancelled");
         }
 
         BigDecimal refundAmount = BigDecimal.ZERO;
@@ -421,14 +421,14 @@ public class BookingService {
 
             // If event has already started or less than 48 hours remaining: not allowed
             if (eventStartDate.isBefore(now)) {
-                throw new BadRequestException("Cannot cancel booking for an event that has already started");
+                throw new GeneralBadRequestException("Cannot cancel booking for an event that has already started");
             }
 
             Duration duration = Duration.between(now, eventStartDate);
             long hours = duration.toHours();
 
             if (hours < 48) {
-                throw new BadRequestException("Cancellation is not allowed under 48 hours before the event starts");
+                throw new GeneralBadRequestException("Cancellation is not allowed under 48 hours before the event starts");
             } else if (hours >= 168) { // 7+ days (7 * 24 = 168 hours)
                 refundAmount = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
             } else { // 48 hours to 7 days: 50%
@@ -439,7 +439,7 @@ public class BookingService {
             // PENDING_PAYMENT can be cancelled any time, no refund
             refundAmount = BigDecimal.ZERO;
         } else {
-            throw new BadRequestException("Booking status " + booking.getStatus() + " cannot be cancelled");
+            throw new GeneralBadRequestException("Booking status " + booking.getStatus() + " cannot be cancelled");
         }
 
         // 6. Update booking status, cancellation reason, and record refund
@@ -453,12 +453,17 @@ public class BookingService {
 
         // 7. Publish booking status changed event
         RestClient restClient = RestClient.create();
+        LinkedHashMap<?, ?> identityResponse = null;
+        try{
+            identityResponse =  restClient
+                    .get()
+                    .uri(identityServiceUrl + "/api/users/" + booking.getUserId())
+                    .retrieve()
+                    .body(LinkedHashMap.class);
+        } catch (Exception ex) {
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
-        LinkedHashMap<?, ?> identityResponse =  restClient
-                .get()
-                .uri(identityServiceUrl + "/api/users/" + booking.getUserId())
-                .retrieve()
-                .body(LinkedHashMap.class);
 
         String attendeeEmail = (String) identityResponse.get("email");
 
