@@ -115,6 +115,7 @@ cd booking-service && ./mvnw clean spring-boot:run
 | **Specification Pattern** | `event-service` | Dynamic filtering of events by keyword, city, and dates using Spring Data JPA `Specification`. |
 | **Builder & DTO Pattern** | All services | Immutable transfer of data between layers and structured entity construction. |
 | **Scheduled Task** | `booking-service` | `@Scheduled` cron/fixed-rate job for automatic ticket release upon hold expiration. |
+| **Strategy & Factory** | `booking-service` | Strategy pattern is used for payment processing and factory pattern is used for creating payment processors. |
 
 ---
 
