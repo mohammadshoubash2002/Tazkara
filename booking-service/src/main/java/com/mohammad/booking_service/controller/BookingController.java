@@ -2,6 +2,8 @@ package com.mohammad.booking_service.controller;
 
 import com.mohammad.booking_service.dto.*;
 import com.mohammad.booking_service.service.BookingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.apache.coyote.BadRequestException;
@@ -16,16 +18,19 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/bookings")
+@Tag(name = "Bookings", description = "APIs for creating, managing, exporting, and downloading event bookings")
 public class BookingController {
     @Autowired
     private BookingService bookingService;
 
+    @Operation(summary = "Create a booking", description = "Reserve tickets and create a pending booking for a specific event.")
     @PostMapping("/event/{event_id}")
     public ResponseEntity<BookingResponse> createBooking(@PathVariable Integer event_id, @Valid @RequestBody AddBookingRequest addBookingRequest, HttpServletRequest request) {
         String token = request.getHeader("Authorization").substring(7);
         return bookingService.addBooking(event_id, addBookingRequest, token);
     }
 
+    @Operation(summary = "Get my bookings", description = "Retrieve a paginated list of bookings made by the currently authenticated user with optional status filter.")
     @GetMapping("/me")
     public ResponseEntity<PageResponse<GetMyBookingsResponse>> getMyBookings(
             @RequestParam(required = false) String status,
@@ -39,6 +44,7 @@ public class BookingController {
         return ResponseEntity.ok(PageResponse.from(bookingPage));
     }
 
+    @Operation(summary = "Get booking by reference", description = "Retrieve detailed information for a booking by its unique booking reference code.")
     @GetMapping({"/{reference}", "/reference/{reference}"})
     public ResponseEntity<GetMyBookingsResponse> getBookingByReference(
             @PathVariable String reference,
@@ -48,6 +54,7 @@ public class BookingController {
     }
 
 
+    @Operation(summary = "Cancel a booking", description = "Cancel a user booking and release reserved tickets.")
     @PatchMapping("/{reference}/cancel")
     public ResponseEntity<String> cancelBooking (
             @PathVariable String reference,
@@ -58,6 +65,7 @@ public class BookingController {
         return bookingService.cancelBooking(reference, reason, token);
     }
 
+    @Operation(summary = "Get event sales summary", description = "Retrieve sales statistics, ticket sales breakdown, and attendee bookings for an event (organizer only).")
     @GetMapping({"/{eventId}/sales", "/event/{eventId}/sales"})
     public ResponseEntity<GetEventSales> getSalesByEvent(
             @PathVariable String eventId,
@@ -73,6 +81,7 @@ public class BookingController {
         return ResponseEntity.ok(sales);
     }
 
+    @Operation(summary = "Export confirmed bookings as CSV", description = "Download a CSV file containing all confirmed bookings and attendee details for an event.")
     @GetMapping({"/{eventId}/export", "/event/{eventId}/export"})
     public ResponseEntity<byte[]> exportConfirmedBookings(
             @PathVariable Integer eventId,
@@ -90,12 +99,14 @@ public class BookingController {
                 .body(csvData);
     }
 
+    @Operation(summary = "Cancel all bookings for an event", description = "Cancel all active bookings associated with an event (triggered when an event is cancelled).")
     @PatchMapping("/event/{eventId}/cancel")
     public ResponseEntity<String> cancelBookingsForEvent(@PathVariable Integer eventId, HttpServletRequest request) {
         String token = request.getHeader("Authorization").substring(7);
         return bookingService.cancelBookingsForEvent(eventId, token);
     }
 
+    @Operation(summary = "Download ticket PDF", description = "Generate and download the official PDF ticket and admission voucher for a confirmed booking.")
     @GetMapping({"/{reference}/ticket", "/{reference}/pdf"})
     public ResponseEntity<byte[]> downloadTicketPdf(
             @PathVariable String reference,

@@ -43,7 +43,7 @@ public class PaymentService {
     private PaymentStrategyFactory paymentStrategyFactory;
 
     @Transactional
-    public ResponseEntity<String> payForBooking(Integer booking_id, PaymentRequest paymentRequest, String token){
+    public ResponseEntity<String> payForBooking(String reference, PaymentRequest paymentRequest, String token){
         RestClient restClient = RestClient.create();
 
         // 1. Authenticate & verify role (Organizers cannot book)
@@ -66,7 +66,7 @@ public class PaymentService {
         Integer userId = (Integer) identityResponse.get("id");
 
         // 2. Lock and verify booking exists with PESSIMISTIC_WRITE lock
-        Booking booking = bookingRepository.findByIdForUpdate(Long.valueOf(booking_id)).orElse(null);
+        Booking booking = bookingRepository.findByReference(reference).orElse(null);
         if (booking == null) {
             throw new BookingNotFoundException("Booking not found");
         }

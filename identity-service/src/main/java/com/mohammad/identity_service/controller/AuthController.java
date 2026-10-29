@@ -5,6 +5,8 @@ import com.mohammad.identity_service.dto.LoginResponse;
 import com.mohammad.identity_service.dto.RegisterRequest;
 import com.mohammad.identity_service.dto.RegisterResponse;
 import com.mohammad.identity_service.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,15 +17,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "APIs for user registration and authentication")
 public class AuthController {
     @Autowired
     private UserService userService;
 
+    @Operation(summary = "Register a new user", description = "Register a new user account with role ORGANIZER or ATTENDEE.")
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         return userService.register(registerRequest);
     }
 
+    @Operation(summary = "User login", description = "Authenticate user credentials and return a JWT access token.")
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         return userService.login(loginRequest);
