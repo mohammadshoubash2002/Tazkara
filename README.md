@@ -8,7 +8,7 @@
 
 The system uses the **Database-per-Service** pattern for loose coupling and service independence.
 
-![Architecture Diagram](https://lh3.googleusercontent.com/d/1Whf7iiDTUOCAPmtWSYk4m4zKKkhyVhmY)
+![Architecture Diagram](https://lh3.googleusercontent.com/d/1wbn3Ugxi6cukMIV5XI-QQTS2h7dDLt9e)
 
 ---
 
