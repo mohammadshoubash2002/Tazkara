@@ -4,12 +4,14 @@ import com.mohammad.booking_service.event.BookingStatusChangedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
 public class BookingNotificationListener {
     private static final Logger log = LoggerFactory.getLogger(BookingNotificationListener.class);
 
+    @Async
     @EventListener
     public void onBookingStatusChanged(BookingStatusChangedEvent event) {
         String subject = String.format("Booking %s - Ref: %s", event.status(), event.bookingReference());
