@@ -118,7 +118,6 @@ public class PaymentService {
         // 8. New payment
         PaymentStrategy strategy = paymentStrategyFactory.getStrategy(paymentRequest.paymentMethod());
         Payment payment = strategy.processPayment(booking, paymentRequest);
-        paymentRepository.save(payment);
 
         // 9. Save payment
         paymentRepository.save(payment);

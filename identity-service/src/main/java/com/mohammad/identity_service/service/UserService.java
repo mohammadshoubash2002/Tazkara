@@ -109,10 +109,10 @@ public class UserService {
 
         appUser.setName(profileEditRequest.name());
 
-        if(appUser.getIsOrganizer() && profileEditRequest.organization_name() != null){
-            appUser.setOrganizationName(profileEditRequest.organization_name());
-        } else {
+        if(!appUser.getIsOrganizer() && profileEditRequest.organization_name() != null){
             throw new ForbiddenException("Organization name cannot be updated for non-organizer users");
+        } else {
+            appUser.setOrganizationName(profileEditRequest.organization_name());
         }
 
         appUser.setUsername(profileEditRequest.username());
